@@ -111,6 +111,7 @@ estimates = function(data,K,maxits,tol, q = 4,p = 10,nx=4){
   Q=list()
   for (k in (1:K)){Q[[k]]=Q1}
   diff = 10
+  iter=0
   while (diff > tol && iter < maxits){
     old.pi <- pi
     old.mu <- mu
@@ -125,7 +126,7 @@ estimates = function(data,K,maxits,tol, q = 4,p = 10,nx=4){
     pi=Mstepresults$pi;beta=Mstepresults$beta;mu=Mstepresults$mu;Q=Mstepresults$Q;theta2=Mstepresults$theta2;sigma2=Mstepresults$sigma2
     for (k in (1:K)){diff1 = sum(pi[k]-old.pi[k])+sum(mu[[k]] - old.mu[[k]])+sum(Q[[k]] - old.Q[[k]]) + sum(beta[[k]] - old.beta[[k]])}
     diff = sum(unlist(diff1)) + sum(theta2-old.theta2) + sum(sigma2-old.sigma2)
-    
+    iter = iter +1
   }
   return(list(pi=pi,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2=sigma2))
   
