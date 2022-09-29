@@ -16,7 +16,7 @@ Estep = function(n,K = 3,q = 4,p = 10,nx=4,
     alphai2Q =list()
     taui =list()
     nn=sum(n)
-    for (k in 1:k){
+    for (k in 1:K){
       betak=beta[[k]]
       Qk=Q[[k]]
       muk=mu[[k]]
@@ -37,10 +37,10 @@ Estep = function(n,K = 3,q = 4,p = 10,nx=4,
     }
     for (i in (1:nn)){
       Staui = 0
-      for (k in 1:k){
+      for (k in 1:K){
         Staui = Staui +taui[[k]][i] 
       }
-      for (k in 1:k){taui[[k]][i]=taui[[k]][i]/Staui}
+      for (k in 1:K){taui[[k]][i]=taui[[k]][i]/Staui}
     }
     return(list(alphai=alphai,alphai2=alphai2,alphai22=alphai22,alphai2Q=alphai2Q,taui=taui))
 }
@@ -52,7 +52,7 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
   theta2i = numeric(K)
   sigma2i = numeric(K)
   nn=sum(n)
-  for (k in 1:k){
+  for (k in 1:K){
     tauik=taui[[k]]
     alphaik = alphai[[k]]
     alphai2k = alphai2[[k]]
@@ -62,13 +62,15 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
     #tau  = as.numeric(z==k)
     x=as.matrix(x)
     y=as.matrix(y)
-    theta2i[k] =  sum(tauik * (alphai2k  -2* x%*%t(betak)%*%alphaik+x%*%t(betak)%*%betak%*%t(x)))
     S1=0
     S2=0
     for (i in (1:nn))
     {S1 = S1 + tauik[i] * (x[i,] %*%t(x[i,]))
     S2 =S2 + tauik[i] * x[i,] %*%t(alphaik[,i])}
     beta[[k]]= solve(S2)%*%S1
+    betak = matrix(as.numeric(beta[[k]]),q,q)
+    theta2i[k] =  sum(tauik * (alphai2k  -2* x%*%t(betak)%*%alphaik+x%*%t(betak)%*%betak%*%t(x)))
+    
 
     S1=0
     S2 = 0
@@ -77,14 +79,14 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
     S2 = S2 + tauik[i] * matrix(alphai22k[,i],nrow=q,ncol=q)}
     Q[[k]]= t(solve(S2) %*% t(S1))
     mu[[k]] = apply(rep(1,p)%*%t(tauik) * (t(y)-Q[[k]]%*%alphaik),1,sum)/sum(tauik)
-    sigma2i[k] = sum(tauik * (diag((y-t(mu[[k]]%*%t(rep(1,nn))))%*%t(y-t(mu[[k]]%*%t(rep(1,nn)))))-2*diag((y-mu[[k]])%*%Qk%*%alphaik)))
+    sigma2i[k] = sum(tauik * (diag((y-t(mu[[k]]%*%t(rep(1,nn))))%*%t(y-t(mu[[k]]%*%t(rep(1,nn)))))-2*diag((y-mu[[k]])%*%Q[[k]]%*%alphaik)))
   }
   theta2 = (1/(nn*q))*sum(theta2i)
   sigma2 = (1/(nn*p))*sum(sigma2i)
   return(list(pi=pi,beta = beta, mu=mu,Q=Q,theta2=theta2,sigma2=sigma2))
 }
 
-estimates = function(data,K,maxits,tol, q = 4,p = 10,nx=4){
+estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,p = 10,nx=4){
   y = data[,1:p]
   x = data[,(p+1):(p+nx)]
   #initialisation
@@ -124,8 +126,9 @@ estimates = function(data,K,maxits,tol, q = 4,p = 10,nx=4){
     
     Mstepresults = Mstep(n,K,q,p,nx=4,x,y,z,C,old.mu,alphai,alphai2,alphai22, alphai2Q,taui)
     pi=Mstepresults$pi;beta=Mstepresults$beta;mu=Mstepresults$mu;Q=Mstepresults$Q;theta2=Mstepresults$theta2;sigma2=Mstepresults$sigma2
-    for (k in (1:K)){diff1 = sum(pi[k]-old.pi[k])+sum(mu[[k]] - old.mu[[k]])+sum(Q[[k]] - old.Q[[k]]) + sum(beta[[k]] - old.beta[[k]])}
-    diff = sum(unlist(diff1)) + sum(theta2-old.theta2) + sum(sigma2-old.sigma2)
+    diff1=numeric(K)
+    for (k in (1:K)){diff1[k] = sum(pi[k]-old.pi[k])+sum(mu[[k]] - old.mu[[k]])+sum(Q[[k]] - old.Q[[k]]) + sum(beta[[k]] - old.beta[[k]])}
+    diff = sum(diff1) + sum(theta2-old.theta2) + sum(sigma2-old.sigma2)
     iter = iter +1
   }
   return(list(pi=pi,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2=sigma2))
