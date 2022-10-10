@@ -38,8 +38,6 @@ data = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
     #matlines(muk+as.vector(Qk%*%alphaik),lty=1)
     #matlines(muk,lty=1)
   }
-    data = data.frame(y = y,x=x)
-    colnames(data) = c("y", "x")
   return(data)
 }
 
@@ -49,3 +47,5 @@ data1=data(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
                 beta = matrix(rnorm(4*4,mean=0,sd=2),ncol=4),
                 SNR1 = 100,
                 SNR2 = 3)
+
+matplot(t(data1[,1:p]),col=data1$g,type="l")

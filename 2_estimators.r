@@ -7,7 +7,6 @@
 Estep = function(n,K = 3,q = 4,p = 10,nx=4,
                  pi,mu,beta, theta2=1,
                  sigma2=1,
-                 x=x,
                  Q=Q,
                  C=C){
     alphai =list()
@@ -99,7 +98,6 @@ estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,p = 10,nx=4){
   #q=dim(y)[2]
   p=dim(y)[2]
   pi = c(0.3,0.3,0.3)
-  mu1 = matrix(c(rep(1,10),rep(1,10), rep(1,10)),nrow = p,ncol=K)
   mu = list()
   for (k in (1:K)){mu[[k]]=mu1[,k]}
   beta1 = matrix(rnorm(4*4,mean=0,sd=2),ncol=nx)
@@ -121,16 +119,12 @@ estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,p = 10,nx=4){
     old.beta <- beta
     old.theta2 <- theta2
     old.sigma2 <- sigma2
-    Estepresults = Estep(n,K,q,p,nx,pi,mu,beta,theta2,sigma2,x,Q,C)
     alphai=Estepresults$alphai;alphai2=Estepresults$alphai2;alphai22=Estepresults$alphai22;alphai2Q=Estepresults$alphai2Q;taui=Estepresults$taui
     
     Mstepresults = Mstep(n,K,q,p,nx=4,x,y,z,C,old.mu,alphai,alphai2,alphai22, alphai2Q,taui)
     pi=Mstepresults$pi;beta=Mstepresults$beta;mu=Mstepresults$mu;Q=Mstepresults$Q;theta2=Mstepresults$theta2;sigma2=Mstepresults$sigma2
     diff1=numeric(K)
-    for (k in (1:K)){diff1[k] = sum(pi[k]-old.pi[k])+sum(mu[[k]] - old.mu[[k]])+sum(Q[[k]] - old.Q[[k]]) + sum(beta[[k]] - old.beta[[k]])}
-    diff = sum(diff1) + sum(theta2-old.theta2) + sum(sigma2-old.sigma2)
     iter = iter +1
   }
-  return(list(pi=pi,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2=sigma2))
   
   
