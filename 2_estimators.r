@@ -70,22 +70,24 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
     theta2i[i,k] =  tauik[i] * (alphai2k[i]  -2* t(x[i,])%*%t(beta[[k]])%*%alphaik[,i]+t(x[i,])%*%t(beta[[k]])%*%beta[[k]]%*%x[i,])
     }
     
-
     S1=0
     S2 = 0
     for (i in (1:nn))
     {S1 = S1 + tauik[i] * (y[i,] - muoldk) %*%t(alphaik[,i])
     S2 = S2 + tauik[i] * matrix(alphai22k[,i],nrow=q,ncol=q)}
-    Q[[k]]= t(solve(S2) %*% t(S1))
+    Q[[k]]= S1 %*% solve(S2)
+    
     mu[[k]] = apply(rep(1,p)%*%t(tauik) * (t(y)-Q[[k]]%*%alphaik),1,sum)/sum(tauik)
-    sigma2i[k] = sum(tauik * (diag((y-t(mu[[k]]%*%t(rep(1,nn))))%*%t(y-t(mu[[k]]%*%t(rep(1,nn)))))-2*diag((y-mu[[k]])%*%Q[[k]]%*%alphaik)))
+    #veci = numeric(nn)
+    #for (i in 1:nn){ veci[i] = t(t(y[i,]-mu[[k]]))%*%Q[[k]]%*%(alphaik[,i])}
+    sigma2i[k] = sum(tauik * (diag(t(t(y)-mu[[k]])%*%(t(y)-mu[[k]]))-2*diag(t(t(y)-mu[[k]])%*%Q[[k]]%*%alphaik)+alphai2Q[[k]]))
   }
   theta2 = (1/(nn*q))*sum(theta2i)
   sigma2 = (1/(nn*p))*sum(sigma2i)
   return(list(pik=pik,beta = beta, mu=mu,Q=Q,theta2=theta2,sigma2=sigma2))
 }
 
-estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,nx=4,p=10){}
+estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,nx=4,p=10){
   y = data[,1:p]
   x = data[,(p+1):(p+nx)]
   #initialisation
@@ -119,9 +121,10 @@ estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,nx=4,p=10){}
     diff1=numeric(K)
     for (k in (1:K)){diff1[k] = sum((pik[k]-old.pik[k])^2)+sum((mu[[k]] - old.mu[[k]])^2)+sum((Q[[k]] - old.Q[[k]])^2) + sum((beta[[k]] - old.beta[[k]])^2)}
     diff = sum(diff1) + sum((theta2-old.theta2)^2) + sum((sigma2-old.sigma2)^2)
+    print(diff)
     iter = iter +1
-    
   }
-  return(list(pik=pik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2=sigma2))}
+  return(list(pik=pik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2=sigma2))
+  }
   
   

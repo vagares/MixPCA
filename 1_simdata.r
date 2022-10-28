@@ -54,3 +54,4 @@ data1=data(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
 
 p=10
 matplot(t(data1[,1:p]),col=data1$g,type="l")
+
