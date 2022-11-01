@@ -31,7 +31,7 @@ Estep = function(n,K = 3,q = 4,p = 10,nx=4,
       alphai2Q[[k]] = numeric(nn)
       for (i in (1:nn)){
         alphai2[[k]][i] = sum(diag(theta2*solve(diag(q)+(theta2/sigma2)*t(Qk)%*%Qk)))+sum(alphai[[k]][,i]^2)
-        alphai2Q[[k]][i] = sum(diag(theta2*Qk%*%solve(diag(q)+(theta2/sigma2)*t(Qk)%*%Qk)%*%t(Qk)))+sum(Qk%*%alphai[[k]][,i]^2)
+        alphai2Q[[k]][i] = sum(diag(theta2*Qk%*%solve(diag(q)+(theta2/sigma2)*t(Qk)%*%Qk)%*%t(Qk)))+sum((Qk%*%alphai[[k]][,i])^2)
         alphai22[[k]][,i] = as.vector(theta2*solve(diag(q)+(theta2/sigma2)*t(Qk)%*%Qk)+alphai[[k]][,i]%*%t(alphai[[k]][,i]))
       }
     }
@@ -45,9 +45,9 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
   pik = apply(tau,2,mean)
   mu = list()
   Q = list()
-  theta2i = matrix(0,nn,K)
   sigma2i = numeric(K)
   nn=sum(n)
+  theta2i = matrix(0,nn,K)
   for (k in 1:K){
     tauik=tau[,k]
     alphaik = alphai[[k]]
@@ -84,7 +84,8 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
   }
   theta2 = (1/(nn*q))*sum(theta2i)
   sigma2 = (1/(nn*p))*sum(sigma2i)
-  return(list(pik=pik,beta = beta, mu=mu,Q=Q,theta2=theta2,sigma2=sigma2))
+  sigma2i = sigma2i / nn
+  return(list(pik=pik,beta = beta, mu=mu,Q=Q,theta2=theta2,sigma2=sigma2,sigma2i=sigma2i))
 }
 
 estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,nx=4,p=10){
@@ -103,7 +104,8 @@ estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,nx=4,p=10){
   theta2=1
   sigma2=1
   Q=list()
-  for (k in (1:K)){Q[[k]]=diag(p)[,1:q]}
+  #for (k in (1:K)){Q[[k]]=diag(p)[,1:q]}
+  for (k in (1:K)){Q[[k]]=matrix(rep(1,p*q),ncol=q)}
   diff = 10
   iter=0
   while (diff > tol && iter < maxits){
@@ -117,14 +119,14 @@ estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,nx=4,p=10){
     alphai=Estepresults$alphai;alphai2=Estepresults$alphai2;alphai22=Estepresults$alphai22;alphai2Q=Estepresults$alphai2Q;tau=Estepresults$tau
     
     Mstepresults = Mstep(n,K,q,p,nx=4,x,y,z,C,old.mu,alphai,alphai2,alphai22, alphai2Q,tau)
-    pik=Mstepresults$pik;beta=Mstepresults$beta;mu=Mstepresults$mu;Q=Mstepresults$Q;theta2=Mstepresults$theta2;sigma2=Mstepresults$sigma2
+    pik=Mstepresults$pik;beta=Mstepresults$beta;mu=Mstepresults$mu;Q=Mstepresults$Q;theta2=Mstepresults$theta2;sigma2=Mstepresults$sigma2;sigma2i=Mstepresults$sigma2i
     diff1=numeric(K)
     for (k in (1:K)){diff1[k] = sum((pik[k]-old.pik[k])^2)+sum((mu[[k]] - old.mu[[k]])^2)+sum((Q[[k]] - old.Q[[k]])^2) + sum((beta[[k]] - old.beta[[k]])^2)}
     diff = sum(diff1) + sum((theta2-old.theta2)^2) + sum((sigma2-old.sigma2)^2)
     print(diff)
     iter = iter +1
   }
-  return(list(pik=pik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2=sigma2))
+  return(list(pik=pik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i))
   }
   
   
