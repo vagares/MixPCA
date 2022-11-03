@@ -45,6 +45,7 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
   pik = apply(tau,2,mean)
   mu = list()
   Q = list()
+  beta=list()
   sigma2i = numeric(K)
   nn=sum(n)
   theta2i = matrix(0,nn,K)
@@ -70,7 +71,7 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
     theta2i[i,k] =  tauik[i] * (alphai2k[i]  -2* t(x[i,])%*%t(beta[[k]])%*%alphaik[,i]+t(x[i,])%*%t(beta[[k]])%*%beta[[k]]%*%x[i,])
     }
     
-    S1=0
+    S1= 0
     S2 = 0
     for (i in (1:nn))
     {S1 = S1 + tauik[i] * (y[i,] - muoldk) %*%t(alphaik[,i])
@@ -126,7 +127,9 @@ estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,nx=4,p=10){
     print(diff)
     iter = iter +1
   }
-  return(list(pik=pik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i))
+  G=numeric(nn)
+  G=apply(tau,1,which.max)
+  return(list(pik=pik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G))
   }
   
   
