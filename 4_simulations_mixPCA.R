@@ -26,7 +26,7 @@ n=1000
 pi = c(0.2,0.35,0.45) # n'est pas utilisé
 mu = matrix(c((0:9)^2/20,2*cos((0:9)/2)+1, rep(1,10)),nrow = 10,ncol=3)
 sigma2 = 3
-SNR1 = 100
+SNR2 = 3
 
 M=2
 pike = matrix(0,K,M)
@@ -44,7 +44,7 @@ for (i in (1:M)){
   data1=data_gen_mixAcp(n,K,q,p,
              pi,
              mu,
-             SNR1 ,
+             SNR2,
              sigma2)
   data=data1$data
   est1  =   tryCatch(
