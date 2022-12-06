@@ -155,4 +155,4 @@ data1=data_gen_mixAcponegroup(n=1000,q = 4,p = 10,
                       mu = c((0:9)^2/20),
                       SNR2 = 3,
                       sigma2 = 3)
-
+matplot(t(data1$data[,1:p]),type="l")
