@@ -18,10 +18,10 @@ mu  =  ggplot(data = as.data.frame(df[df$coefs2 == "mu", ]),  aes(x = coefs2,  y
   facet_grid( ~ coefs,
              labeller = label_parsed,
              scales = "free_y") +
-  #geom_boxplot(aes(fill = G)) + labs(fill = "Groupe") +
+  geom_boxplot() +
   geom_hline(yintercept = 0) +
   xlab(quote(mu)) +
-  ylab(quote(hat(mu))) +
+  ylab(quote(hat(mu) - mu)) +
   theme_bw() + theme(axis.text.x = element_blank(),axis.ticks = element_blank()) +
   theme(legend.position = "top")
 
@@ -32,9 +32,10 @@ Q  =  ggplot(data = as.data.frame(df[df$coefs2 == "Q", ]),  aes(x = coefs2,  y =
   facet_grid( ~ coefs,
              labeller = label_parsed,
              scales = "free_y") +
+  geom_boxplot() +
   geom_hline(yintercept = 0) +
   xlab(quote(Q)) +
-  ylab(quote(hat(Q))) +
+  ylab(quote(hat(Q) - Q)) +
   theme_bw() + theme(axis.text.x = element_blank(),axis.ticks = element_blank()) +
   theme(legend.position = "top")
 Q
@@ -43,11 +44,23 @@ sigma  =  ggplot(data = as.data.frame(df[df$coefs2 == "sigma", ]),   aes(x = coe
   facet_grid( ~ coefs,
              labeller = label_parsed,
              scales = "free_y") +
+  geom_boxplot() +
   geom_hline(yintercept = 0) +
   xlab(quote(sigma)) +
-  ylab(quote(hat(sigma))) +
+  ylab(quote(hat(sigma)- sigma )) +
   theme_bw() + theme(axis.text.x = element_blank(),axis.ticks = element_blank()) +
   theme(legend.position = "top")
 sigma
 
-
+X11()
+theta  =  ggplot(data = as.data.frame(df[df$coefs2 == "theta", ]),   aes(x = coefs2,  y = value)) +
+  facet_grid( ~ coefs,
+              labeller = label_parsed,
+              scales = "free_y") +
+  geom_boxplot() +
+  geom_hline(yintercept = 0) +
+  xlab(quote(theta)) +
+  ylab(quote(hat(theta)- theta )) +
+  theme_bw() + theme(axis.text.x = element_blank(),axis.ticks = element_blank()) +
+  theme(legend.position = "top")
+theta

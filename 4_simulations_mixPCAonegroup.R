@@ -64,7 +64,7 @@ for (i in (1:M)){
 
 dfmu1  =  data.frame(seq(1:M), t(mu1e))
 dfQ1  =  data.frame(seq(1:M), t(Qe1))
-dftheta  =  data.frame(seq(1:M), theta2e)
+dftheta1  =  data.frame(seq(1:M), theta2e)
 dfsigma1  =  data.frame(seq(1:M),sigma2e[1,])
 
 
@@ -89,4 +89,15 @@ dfsigma$coefs2="sigma"
 
 colnames(dfsigma)  =  c("n.sim","value","coefs","coefs2")
 dfsigma=dfsigma[,c(1,3,2,4)]
-df = rbind(dfmu,dfQ,dfsigma)
+
+colnames(dfsigma1)=  c("n.sim","value")
+
+dftheta  =  dftheta1
+colnames(dftheta)  =  c("n.sim","value")
+dftheta$coefs="theta"
+dftheta$coefs2="theta"
+
+colnames(dftheta)  =  c("n.sim","value","coefs","coefs2")
+dftheta=dftheta[,c(1,3,2,4)]
+
+df = rbind(dfmu,dfQ,dfsigma,dftheta)

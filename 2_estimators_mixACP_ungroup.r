@@ -67,7 +67,7 @@ Mstep = function(n=c(100,100,100),K = 1,q = 4,p = 10,
     S2 = S2 +  matrix(alphai22k[,i],nrow=q,ncol=q)}
     Q[[k]]= S1 %*% solve(S2)
     
-    mu[[k]] = apply( (t(y)-Q[[k]]%*%alphaik),1,sum)
+    mu[[k]] = apply( (t(y)-Q[[k]]%*%alphaik),1,sum)/n
     #veci = numeric(n)
     #for (i in 1:n){ veci[i] = t(t(y[i,]-mu[[k]]))%*%Q[[k]]%*%(alphaik[,i])}
     sigma2i[k] = sum( (diag(t(t(y)-mu[[k]])%*%(t(y)-mu[[k]]))-2*diag(t(t(y)-mu[[k]])%*%Q[[k]]%*%alphaik)+alphai2Q[[k]]))
