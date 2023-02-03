@@ -21,10 +21,14 @@ image(Sigma[,rev(1:p)])
 W = eigen(Sigma)$vectors[,1:q]  # Est-ce que ça suffit? 
 x = matrix(rnorm(n*q),n,q)
 
-sig2 = .01
+sig2 = 1
 mu = c(-3,-3,-3,-1,0,0,1,2,2,2)
 X = x%*%t(W)+matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
 Xtemp = matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
+#matplot(t(Xtemp),type="l")
+#lines(mu,lwd=2)
+#matplot(t(X),type="l")
+#lines(mu,lwd=2)
 
 pca = PCA(X,nc=q)
 U = pca$svd$V
@@ -37,13 +41,14 @@ pca$eig[1:q]
 
 
 Xtilde = x%*%t(Wtilde)+matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
+matplot(Xtilde[1:100,],type="l")
 pca_tilde = PCA(Xtilde,nc=q)
 pca_tilde$eig[1:q]
 U = pca_tilde$svd$V
 K = diag(pca_tilde$eig[1:q])
 Wtilde = U%*%sqrt(K-sig2*diag(rep(1,q)))
 What = U%*%sqrt(K-sig2*diag(rep(1,q)))
-
+#methode PCA
 Xhat = x%*%t(What)+matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
 par(mfrow=c(1,3))
 image(Sigma[,rev(1:p)])
