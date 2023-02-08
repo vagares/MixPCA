@@ -84,10 +84,10 @@ estimates = function(data,
                      p=10,
                      verbose=TRUE){
   K=1
-  
+  y = data[,1:p]
   #initialisation
   n = dim(data)[1]
-  y = as.matrix(data[,1:p],n,p)
+
   mu = list()
   mu[[1]]=apply(y,2,mean)
   theta2=1
@@ -122,12 +122,11 @@ estimates = function(data,
     diff = sum(diff1) + sum((theta2-old.theta2)^2)
     loglik_old = loglik
     k = 1
-    if (sigma2i<0){loglik = -Inf}else{
-    loglik = ll_mixPCA_onegroup(y,
-                                mu=mu[[1]],
-                                Q=Q[[1]],
+    loglik = ll_mixPCA_onegroup(data,
+                                mu=mu[[k]],
+                                Q=Q[[k]],
                                 alphai=alphai,
-                                sigma2i=sigma2i)}
+                                sigma2i=sigma2i)
     if (verbose) {print(paste("iteration",iter,", LL = ",round(loglik,2)))}
     
     cvce = EM_converged(loglik,loglik_old)$converged
@@ -197,3 +196,9 @@ EM_converged <-
 
 
   
+dec= read.csv("C:\\Users\\vagares\\Documents\\MixPCA\\decathlon.csv",sep=";") 
+print(dec)
+
+tab = dec[2:10]
+
+est = estimates(tab,maxits=100,tol=0.01, q = 4,p=10)

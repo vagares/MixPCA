@@ -5,7 +5,7 @@
 #########################################################################
 
 Estep = function(n,K = 3,q = 4,p = 10,nx=4,
-                 piik,mu,beta, theta2=1,
+                 pik,mu,beta, theta2=1,
                  sigma2=1,
                  x=x,y=y,
                  Q=Q,
@@ -24,7 +24,7 @@ Estep = function(n,K = 3,q = 4,p = 10,nx=4,
       ez= muk%*%t(rep(1,nn)) + Qk%*%betak%*%t(x)
       vz = theta2 * (Qk%*%t(Qk))+sigma2*diag(p)
       for (i in (1:nn)){
-      tau[i,k] = dmvnorm(y[i,], mean = ez[,i], sigma = vz)*piik[k]}
+      tau[i,k] = dmvnorm(y[i,], mean = ez[,i], sigma = vz)*pik[k]}
       alphai[[k]] = betak%*%t(x) + theta2*t(Qk) %*%solve(theta2*Qk%*%(t(Qk))+sigma2*diag(p)) %*% (t(y)-muk%*%t(rep(1,nn))-Qk%*%betak%*%t(x))
       alphai22[[k]] = matrix(0,ncol=nn,nrow=q*q)
       alphai2[[k]] = numeric(nn)
@@ -42,7 +42,7 @@ Estep = function(n,K = 3,q = 4,p = 10,nx=4,
 
 Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
                  x,y,z,C,muold,alphai,alphai2,alphai22, alphai2Q,tau){
-  piik = apply(tau,2,mean)
+  pik = apply(tau,2,mean)
   mu = list()
   Q = list()
   beta=list()
@@ -86,22 +86,16 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
   theta2 = (1/(nn*q))*sum(theta2i)
   sigma2 = (1/(nn*p))*sum(sigma2i)
   sigma2i = sigma2i / nn
-  return(list(piik=piik,beta = beta, mu=mu,Q=Q,theta2=theta2,sigma2=sigma2,sigma2i=sigma2i))
+  return(list(pik=pik,beta = beta, mu=mu,Q=Q,theta2=theta2,sigma2=sigma2,sigma2i=sigma2i))
 }
 
-estimates = function(data,K=3,maxits=100,
-                     tol=1e-4, 
-                     q = 4,
-                     p=10,
-                     nx=4,
-                     verbose=TRUE){
-  N = dim(data)[1]
-  y = as.matrix(data[,1:p],N,p)
+estimates = function(data,K=3,maxits=100,tol=0.01, q = 4,nx=4,p=10){
+  y = data[,1:p]
   x = data[,(p+1):(p+nx)]
   #initialisation
   groupe=1:K
   C= sample(groupe,dim(y)[1],replace=TRUE)
-  piik=rep(1/K,K)
+  pik=rep(1/K,K)
   n = as.numeric(summary(as.factor(C)))
 
   mu = list()
@@ -115,78 +109,27 @@ estimates = function(data,K=3,maxits=100,
   for (k in (1:K)){Q[[k]]=matrix(rep(1,p*q),ncol=q)}
   diff = 10
   iter=0
-  loglik=-Inf
   while (diff > tol && iter < maxits){
-    old.piik <- piik
+    old.pik <- pik
     old.mu <- mu
     old.Q <- Q
     old.beta <- beta
     old.theta2 <- theta2
     old.sigma2 <- sigma2
-    Estepresults = Estep(n,K,q,p,nx,piik,mu,beta,theta2,sigma2,x,y,Q,C)
+    Estepresults = Estep(n,K,q,p,nx,pik,mu,beta,theta2,sigma2,x,y,Q,C)
     alphai=Estepresults$alphai;alphai2=Estepresults$alphai2;alphai22=Estepresults$alphai22;alphai2Q=Estepresults$alphai2Q;tau=Estepresults$tau
     
     Mstepresults = Mstep(n,K,q,p,nx=4,x,y,z,C,old.mu,alphai,alphai2,alphai22, alphai2Q,tau)
-    piik=Mstepresults$piik;beta=Mstepresults$beta;mu=Mstepresults$mu;Q=Mstepresults$Q;theta2=Mstepresults$theta2;sigma2=Mstepresults$sigma2;sigma2i=Mstepresults$sigma2i
+    pik=Mstepresults$pik;beta=Mstepresults$beta;mu=Mstepresults$mu;Q=Mstepresults$Q;theta2=Mstepresults$theta2;sigma2=Mstepresults$sigma2;sigma2i=Mstepresults$sigma2i
     diff1=numeric(K)
-    for (k in (1:K)){diff1[k] = sum((piik[k]-old.piik[k])^2)+sum((mu[[k]] - old.mu[[k]])^2)+sum((Q[[k]] - old.Q[[k]])^2) + sum((beta[[k]] - old.beta[[k]])^2)}
+    for (k in (1:K)){diff1[k] = sum((pik[k]-old.pik[k])^2)+sum((mu[[k]] - old.mu[[k]])^2)+sum((Q[[k]] - old.Q[[k]])^2) + sum((beta[[k]] - old.beta[[k]])^2)}
     diff = sum(diff1) + sum((theta2-old.theta2)^2) + sum((sigma2-old.sigma2)^2)
     print(diff)
-	  loglik_old = loglik
-    k = 1
-    if ((sigma2i[1]<0) || (sigma2i[2]<0) || (sigma2i[3]<0)) {loglik = -Inf}else{loglik = ll_mixPCA(y,
-						            mu=mu,
-                        Q=Q,
-                        alphai=alphai,
-                        sigma2i=sigma2i,K,tau)}
-    if (verbose) {print(paste("iteration",iter,", LL = ",round(loglik,2)))}
-    
-    cvce = EM_converged(loglik,loglik_old)$converged				
     iter = iter +1
   }
-  G=numeric(N)
+  G=numeric(nn)
   G=apply(tau,1,which.max)
-  return(list(piik=piik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai))
+  return(list(pik=pik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G))
   }
-
-ll_mixPCA = function(X,mu=mu,Q=Q,alphai=alphai,sigma2i=sigma2i,K=K,tau=tau){
-  N = nrow(X)
-  p = ncol(X)
-  tmp=numeric(K)
-  LL=numeric(K)
-  for (k in (1:K)){
-	tmp = (X-matrix(rep(mu[[k]],N),N,p,byrow=TRUE)-t(alphai[[k]])%*%t(Q[[k]]))
-	LL[k] = -N*p*(log(2*pi)+log(sigma2i[k]))-sum(tau[,k] * diag(tmp%*%t(tmp)))
-	}
-	L=sum(LL)
-  return(L)
-}
- 
-  
-EM_converged <-
-  function(loglik, previous_loglik, threshold = 1e-4) {
-    
-    converged = 0;
-    decrease = 0;
-    if(!(previous_loglik==-Inf)){
-      if (loglik - previous_loglik < -1e-2) # allow for a little imprecision 
-      {
-        print(paste("******likelihood decreased from ",previous_loglik," to ", loglik,sep=""),quote = FALSE)
-        decrease = 1;
-      }
-      
-      delta_loglik = abs(loglik - previous_loglik);
-      avg_loglik = (abs(loglik) + abs(previous_loglik) + threshold)/2;
-      bb = ((delta_loglik/avg_loglik) < threshold)
-      if (bb) {converged = 1}
-    }
-    
-    res <- NULL
-    res$converged <- converged
-    res$decrease <- decrease
-    return(res)
-    
-  }																		 
-  
   
   

@@ -4,6 +4,7 @@ library(nlme)
 library(dplyr)
 library(tidyr)
 library(tidyverse)
+library(FactoMineR)
 setwd('C:\\Users\\vagares\\Documents\\MixPCA')
 
 source("1_simdata.r")
@@ -12,36 +13,69 @@ source("2_estimators_mixACP_ungroup.r")
 
 
 #res  =  runSims1(vList = vlis1(nsim = 1000),  doOne  =  doOne, parallel = TRUE, seedList = NULL)
+dec= read.csv("C:\\Users\\vagares\\Documents\\MixPCA\\decathlon.csv",sep=";") 
+print(dec)
+
+tab = as.matrix(dec[2:10])
+
+est = estimates(tab,maxits=100,tol=0.01, q = 4,p=9)
 
 
 
 
-K=1
-maxits=1000
-tol=0.0001
-q = 4
 
-p=10
-n=1000
-mu = c((0:9)^2/20)
-sigma2 = 3
-SNR2 = 3
 
 M=100
-mu1e = matrix(0,p,M)
-Qe1 = matrix(0,p*q,M)
-theta2e = numeric(M)
-sigma2e = matrix(0,K,M)
-err = numeric(M)
+n = 10000
+p = 10
+q=4
+s = c(0.7,-0.4)
+mu = c(-3,-3,-3,-1,0,0,1,2,2,2)
+sig2 = .01
+tol = 1e-4
+maxit = 100
+covXpca = matrix(0,p*p,M)
+covXest = matrix(0,p*p,M)
+covX = matrix(0,p*p,M)
 #nn=sum(n)
 for (i in (1:M)){
-  data1=data_gen_mixAcponegroup(n,q,p,
-             mu,
-             SNR2,
-             sigma2)
-  data=data1$data
+  data1=data_gen_mixAcponegroup(n=n,q = 4,p=p,
+                                s=s,
+                                mu=mu,
+                                sig2=sig2)
+  X=data1$data
+  covX[,i] = as.vector(cov(X))
+  # est1  =   tryCatch(
+  #   expr  = {est0 = estimates(data,
+  #                             maxits=100,
+  #                             tol=1e-4, 
+  #                             q = 4,
+  #                             p=10,
+  #                             verbose=TRUE)
+  #   est0}, error  =  function(cond) {
+  #     mu=list()
+  #     mu[[1]] = rep(NA,p)
+  #     Q=list()
+  #     Q[[1]] = rep(NA,p*q)
+  #     theta2 = NA
+  #     sigma2i = list()
+  #     sigma2i[[1]] = NA
+  #     G=rep(NA,n)
+  #     list(mu=mu,Q=Q,theta2=theta2,sigma2i=sigma2i)
+  #   })
+  
+  pca = PCA(X,nc=q)
+  U = pca$svd$V
+  K = diag(pca$eig[1:q])
+  What = U%*%sqrt(K-sig2*diag(rep(1,q)))
+  x = matrix(rnorm(n*q),n,q)
+  Xhat = x%*%t(What)+matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
+  # les vraies valeurs de paramètres sont mises
+  covXpca[,i] = as.vector(cov(Xhat))
+  ### Si on utilise le code EM 
+  est0 = estimates(X,100,1e-4, q,p)
   est1  =   tryCatch(
-    expr  = {est0 = estimates(data,maxits,tol, q,p)
+    expr  = {est0 = estimates(X,100,1e-4, q,p)
     est0}, error  =  function(cond) {
       mu=list()
       mu[[1]] = rep(NA,p)
@@ -51,53 +85,22 @@ for (i in (1:M)){
       sigma2i = list()
       sigma2i[[1]] = NA
       G=rep(NA,n)
-      list(mu=mu,Q=Q,theta2=theta2,sigma2i=sigma2i)
+      alphai[[1]] = rep(NA,n*q)
+      list(mu=mu,Q=Q,theta2=theta2,sigma2i=sigma2i,alphai=alphai)
     })
+  Xest0 = t(est0$alphai[[1]])%*%t(est0$Q[[1]])+matrix(rep(est0$mu[[1]],n),n,p,byrow=TRUE)+sqrt(est0$sigma2i)*matrix(rnorm(n*p),n,p)
+  covXest[,i] = as.vector(cov(Xest0))
   #table(est1$G,data1$data$g)
  
-  mu1e[,i] = est1$mu[[1]] - mu
-  Qe1[,i] = as.vector(est1$Q[[1]]) -  as.vector(data1$Q[[1]])
-  theta2e[i] = est1$theta2 - data1$theta2
-  sigma2e[1,i] = est1$sigma2i[[1]] - data1$sigma2[[1]]
+  
 }
+covXmean = matrix(apply(covX,1,mean),p,p)
+covXpcamean = matrix(apply(covXpca,1,mean),p,p)
+covXestmean = matrix(apply(covXest,1,mean),p,p)
 
-
-dfmu1  =  data.frame(seq(1:M), t(mu1e))
-dfQ1  =  data.frame(seq(1:M), t(Qe1))
-dftheta1  =  data.frame(seq(1:M), theta2e)
-dfsigma1  =  data.frame(seq(1:M),sigma2e[1,])
-
-
-dfmu  =  dfmu1
-colnames(dfmu)  =  c("n.sim",paste("mu[",1:p,"]",sep=""))
-dfmu  =  dfmu %>%
-  gather(coefs,  value,   - c("n.sim"))
-dfmu$coefs2="mu"
-
-dfQ  =  dfQ1
-colnames(dfQ)  =  c("n.sim",paste("Q[",1:(p*q),"]",sep=""))
-dfQ  =  dfQ %>%
-  gather(coefs,  value,   - c("n.sim"))
-dfQ$coefs2="Q"
-
-colnames(dfsigma1)=  c("n.sim","value")
-
-dfsigma  =  dfsigma1
-colnames(dfsigma)  =  c("n.sim","value")
-dfsigma$coefs="sigma"
-dfsigma$coefs2="sigma"
-
-colnames(dfsigma)  =  c("n.sim","value","coefs","coefs2")
-dfsigma=dfsigma[,c(1,3,2,4)]
-
-colnames(dfsigma1)=  c("n.sim","value")
-
-dftheta  =  dftheta1
-colnames(dftheta)  =  c("n.sim","value")
-dftheta$coefs="theta"
-dftheta$coefs2="theta"
-
-colnames(dftheta)  =  c("n.sim","value","coefs","coefs2")
-dftheta=dftheta[,c(1,3,2,4)]
-
-df = rbind(dfmu,dfQ,dfsigma,dftheta)
+image(covXmean[,rev(1:p)])
+title("Cov empirique")
+image(covXpcamean[,rev(1:p)])
+title("Cov estimée PCA")
+image(covXestmean[,rev(1:p)])
+title("Cov estimée PPCA")
