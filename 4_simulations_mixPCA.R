@@ -33,6 +33,15 @@ maxit = 100
 covXpca = matrix(0,p*p,M)
 covXest = matrix(0,p*p,M)
 covX = matrix(0,p*p,M)
+pike = matrix(0,K,M)
+mu1e = matrix(0,p,M)
+mu2e = matrix(0,p,M)
+mu3e = matrix(0,p,M)
+Qe1 = matrix(0,p*q,M)
+Qe2 = matrix(0,p*q,M)
+Qe3 = matrix(0,p*q,M)
+theta2e = numeric(M)
+sigma2e = matrix(0,K,M)
 err= numeric(M)
 #nn=sum(n)
 for (i in (1:M)){
@@ -82,16 +91,23 @@ for (i in (1:M)){
   nn1=length(est0$G[est0$G == 1])
   nn2=length(est0$G[est0$G == 2])
   nn3=length(est0$G[est0$G == 3])
-  x1 = data1$data[est0$G == 1,1:p]
   Xest0[which(est0$G == 1),1:p]=t(est0$alphai[[1]][,which(est0$G == 1)])%*%t(est0$Q[[1]])+matrix(rep(est0$mu[[1]],nn1),nn1,p,byrow=TRUE)+sqrt(est0$sigma2i[1])*matrix(rnorm(nn1*p),nn1,p)
-  x2 = data1$data[est0$G == 2,1:p]
   Xest0[which(est0$G == 2),1:p]=t(est0$alphai[[2]][,which(est0$G == 2)])%*%t(est0$Q[[2]])+matrix(rep(est0$mu[[2]],nn2),nn2,p,byrow=TRUE)+sqrt(est0$sigma2i[2])*matrix(rnorm(nn2*p),nn2,p)
-  x3 = data1$data[est0$G == 3,1:p]
   Xest0[which(est0$G == 3),1:p]=t(est0$alphai[[3]][,which(est0$G == 3)])%*%t(est0$Q[[3]])+matrix(rep(est0$mu[[3]],nn3),nn3,p,byrow=TRUE)+sqrt(est0$sigma2i[3])*matrix(rnorm(nn3*p),nn3,p)
   
   covXest[,i] = as.vector(cov(Xest0))
   #table(est1$G,data1$data$g)
-  
+  pike[,i] = est1$piik
+  mu1e[,i] = est1$mu[[n1]] - mu[,1]
+  mu2e[,i] = est1$mu[[n2]] - mu[,2]
+  mu3e[,i] = est1$mu[[n3]] - mu[,3]
+  Qe1[,i] = as.vector(est1$Q[[n1]]) -  as.vector(data1$Q[[1]])
+  Qe2[,i] = as.vector(est1$Q[[n2]])-  as.vector(data1$Q[[2]])
+  Qe3[,i] = as.vector(est1$Q[[n3]])-  as.vector(data1$Q[[3]])
+  theta2e[i] = est1$theta2 - data1$theta2
+  sigma2e[1,i] = est1$sigma2i[[n1]] - data1$sigma2[[1]]
+  sigma2e[2,i] = est1$sigma2i[[n2]] - data1$sigma2[[2]]
+  sigma2e[3,i] = est1$sigma2i[[n3]] - data1$sigma2[[3]]
   
 }
 covXmean = matrix(apply(covX,1,mean),p,p)
@@ -104,3 +120,60 @@ image(covXpcamean[,rev(1:p)])
 title("Cov estimée PCA")
 image(covXestmean[,rev(1:p)])
 title("Cov estimée PPCA")
+
+
+dfpi1  =  data.frame(seq(1:M), pike[1,])
+dfpi2  =  data.frame(seq(1:M), pike[2,])
+dfpi3  =  data.frame(seq(1:M), pike[3,])
+dfmu1  =  data.frame(seq(1:M), t(mu1e))
+dfmu2  =  data.frame(seq(1:M), t(mu2e))
+dfmu3  =  data.frame(seq(1:M), t(mu3e))
+dfQ1  =  data.frame(seq(1:M), t(Qe1))
+dfQ2  =  data.frame(seq(1:M), t(Qe2))
+dfQ3  =  data.frame(seq(1:M), t(Qe3))
+dftheta  =  data.frame(seq(1:M), theta2e)
+dfsigma1  =  data.frame(seq(1:M),sigma2e[1,])
+dfsigma2  =  data.frame(seq(1:M),sigma2e[2,])
+dfsigma3  =  data.frame(seq(1:M),sigma2e[3,])
+dferr  =  data.frame(seq(1:M),err)
+dfpi1$G  =  "G1"
+colnames(dfpi1)=  c("n.sim","value","G")
+dfpi2$G  =  "G2"
+colnames(dfpi2)=  c("n.sim","value","G")
+dfpi3$G  =  "G3"
+colnames(dfpi3)=  c("n.sim","value","G")
+dfpi  =  rbind(dfpi1,dfpi2,dfpi3)
+dfpi$coefs="pi"
+dfpi$coefs2="pi"
+colnames(dfpi)  =  c("n.sim","value","G","coefs","coefs2")
+dfmu1$G  =  "G1"
+dfmu2$G  =  "G2"
+dfmu3$G  =  "G3"
+dfmu  =  rbind(dfmu1,dfmu2,dfmu3)
+colnames(dfmu)  =  c("n.sim",paste("mu[",1:p,"]",sep=""),"G")
+dfmu  =  dfmu %>%
+  gather(coefs,  value,   - c("n.sim", "G"))
+dfmu$coefs2="mu"
+dfmu = dfmu[,c(1,4,2,3,5)]
+
+dfQ1$G  =  "G1"
+dfQ2$G  =  "G2"
+dfQ3$G  =  "G3"
+dfQ  =  rbind(dfQ1,dfQ2,dfQ3)
+colnames(dfQ)  =  c("n.sim",paste("Q[",1:(p*q),"]",sep=""),"G")
+dfQ  =  dfQ %>%
+  gather(coefs,  value,   - c("n.sim", "G"))
+dfQ$coefs2="Q"
+dfQ = dfQ[,c(1,4,2,3,5)]
+dfsigma1$G  =  "G1"
+colnames(dfsigma1)=  c("n.sim","value","G")
+dfsigma2$G  =  "G2"
+colnames(dfsigma2)=  c("n.sim","value","G")
+dfsigma3$G  =  "G3"
+colnames(dfsigma3)=  c("n.sim","value","G")
+dfsigma  =  rbind(dfsigma1,dfsigma2,dfsigma3)
+colnames(dfsigma)  =  c("n.sim","value","G")
+dfsigma$coefs="sigma"
+dfsigma$coefs2="sigma"
+colnames(dfsigma)  =  c("n.sim","value","G","coefs","coefs2")
+df = rbind(dfpi,dfmu,dfQ,dfsigma)

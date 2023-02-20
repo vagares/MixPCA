@@ -124,8 +124,8 @@ estimates = function(data,
     k = 1
     if (sigma2i<0){loglik = -Inf}else{
     loglik = ll_mixPCA_onegroup(y,
-                                mu=mu[[1]],
-                                Q=Q[[1]],
+                                mu=mu,
+                                Q=Q,
                                 alphai=alphai,
                                 sigma2i=sigma2i)}
     if (verbose) {print(paste("iteration",iter,", LL = ",round(loglik,2)))}
@@ -141,9 +141,13 @@ estimates = function(data,
 ll_mixPCA_onegroup = function(X,mu=mu,Q=Q,alphai=alphai,sigma2i=sigma2i){
   N = nrow(X)
   p = ncol(X)
-  tmp = (X-matrix(rep(mu,N),N,p,byrow=TRUE)-t(alphai[[1]])%*%t(Q))
-  LL = -N*p*(log(2*pi)+log(sigma2i))-sum(diag(tmp%*%t(tmp)))
-  return(LL)
+  #tmp = (X-matrix(rep(mu,N),N,p,byrow=TRUE)-t(alphai[[1]])%*%t(Q))
+  #LL = -N*p*(log(2*pi)+log(sigma2i))-sum(diag(tmp%*%t(tmp)))
+  tmp = matrix(rep(mu[[1]],N),N,p,byrow=TRUE)
+  vv =  Q[[1]]%*%t(Q[[1]])+ diag(sigma2i,p)
+  LL =  dmvnorm(X-tmp,rep(0,p),vv,log=FALSE)
+  L=-sum(log((LL)))
+  return(L)
 }
   
   

@@ -93,14 +93,15 @@ estimates = function(data,
   y = as.matrix(data[,1:p],N,p)
   #initialisation
   groupe=1:K
-  C= sample(groupe,dim(y)[1],replace=TRUE)
-  piik=rep(1/K,K)
+  km=kmeans(y,3,nstart = 10)
+  C= km$cluster
+  piik=km$size/N
   n = as.numeric(summary(as.factor(C)))
 
   mu = list()
   for (k in (1:K)){
-  nk=n[k]
-	mu[[k]]=apply(y[which(C==k),],2,mean)}
+    nk=n[k]
+	  mu[[k]]=apply(y[which(C==k),],2,mean)}
   yc = matrix(N*p,N,p)
   Q=list()
   for (k in (1:K)){
@@ -148,7 +149,7 @@ estimates = function(data,
 						mu=mu,
                         Q=Q,
                         alphai=alphai,
-                        sigma2i=sigma2i,K,tau)}
+                        sigma2i=sigma2i,K,tau,piik=piik)}
     if (verbose) {print(paste("iteration",iter,", LL = ",round(loglik,2)))}
     
     cvce = EM_converged(loglik,loglik_old)$converged
@@ -159,19 +160,21 @@ estimates = function(data,
   G=apply(tau,1,which.max)
   return(list(piik=piik,mu=mu,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai))
   }
-ll_mixPCA = function(X,mu=mu,Q=Q,alphai=alphai,sigma2i=sigma2i,K=K,tau=tau){
-  N = nrow(X)
-  p = ncol(X)
+
+
+ll_mixPCA = function(X,mu=mu,Q=Q,alphai=alphai,sigma2i=sigma2i,K=K,tau=tau,piik=piik){
+  N = nrow(y)
+  p = ncol(y)
   tmp=numeric(K)
-  LL=numeric(K)
+  LL=matrix(0,N,K)
   for (k in (1:K)){
-	tmp = (X-matrix(rep(mu[[k]],N),N,p,byrow=TRUE)-t(alphai[[k]])%*%t(Q[[k]]))
-	LL[k] = -N*p*(log(2*pi)+log(sigma2i[k]))-sum(tau[,k] * diag(tmp%*%t(tmp)))
-	}
-	L=sum(LL)
+    tmp = matrix(rep(mu[[k]],N),N,p,byrow=TRUE)
+    vv = theta2 * Q[[k]]%*%t(Q[[k]])+ diag(sigma2i[k],p)
+    LL[,k] = piik[k]* dmvnorm(y-tmp,rep(0,p),vv,log=FALSE)
+  }
+  L=sum(log(apply(LL,2,sum)))
   return(L)
-}
- 
+} 
   
 EM_converged <-
   function(loglik, previous_loglik, threshold = 1e-4) {

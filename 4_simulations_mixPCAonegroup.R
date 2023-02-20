@@ -73,22 +73,21 @@ for (i in (1:M)){
   # les vraies valeurs de paramètres sont mises
   covXpca[,i] = as.vector(cov(Xhat))
   ### Si on utilise le code EM 
-  est0 = estimates(X,100,1e-4, q,p)
+  #est0 = estimates(X,100,1e-4, q,p)
   est1  =   tryCatch(
     expr  = {est0 = estimates(X,100,1e-4, q,p)
     est0}, error  =  function(cond) {
       mu=list()
       mu[[1]] = rep(NA,p)
       Q=list()
-      Q[[1]] = rep(NA,p*q)
+      Q[[1]] = matrix(rep(NA,p*q),p,q)
       theta2 = NA
-      sigma2i = list()
-      sigma2i[[1]] = NA
-      G=rep(NA,n)
-      alphai[[1]] = rep(NA,n*q)
+      sigma2i = NA
+      alphai=list()
+      alphai[[1]] = matrix(rep(NA,n*q),q,n)
       list(mu=mu,Q=Q,theta2=theta2,sigma2i=sigma2i,alphai=alphai)
     })
-  Xest0 = t(est0$alphai[[1]])%*%t(est0$Q[[1]])+matrix(rep(est0$mu[[1]],n),n,p,byrow=TRUE)+sqrt(est0$sigma2i)*matrix(rnorm(n*p),n,p)
+  Xest0 = t(est1$alphai[[1]])%*%t(est1$Q[[1]])+matrix(rep(est1$mu[[1]],n),n,p,byrow=TRUE)+sqrt(est1$sigma2i)*matrix(rnorm(n*p),n,p)
   covXest[,i] = as.vector(cov(Xest0))
   #table(est1$G,data1$data$g)
  
@@ -99,8 +98,8 @@ covXpcamean = matrix(apply(covXpca,1,mean),p,p)
 covXestmean = matrix(apply(covXest,1,mean),p,p)
 
 image(covXmean[,rev(1:p)])
-title("Cov empirique")
+title("Empirical covariance")
 image(covXpcamean[,rev(1:p)])
-title("Cov estimée PCA")
+title("Covariance estimated by PCA")
 image(covXestmean[,rev(1:p)])
-title("Cov estimée PPCA")
+title("Covariance estimated by PPCA")

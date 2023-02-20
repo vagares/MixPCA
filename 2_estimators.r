@@ -1,7 +1,7 @@
 
 #Packages
 
-
+library(mvtnorm)
 #########################################################################
 
 Estep = function(n,K = 3,q = 4,p = 10,nx=4,
@@ -100,8 +100,10 @@ estimates = function(data,K=3,maxits=100,
   x = data[,(p+1):(p+nx)]
   #initialisation
   groupe=1:K
-  C= sample(groupe,dim(y)[1],replace=TRUE)
-  piik=rep(1/K,K)
+  #C= sample(groupe,dim(y)[1],replace=TRUE)
+  km=kmeans(y,3,nstart = 10)
+  C= km$cluster
+  piik=km$size/N
   n = as.numeric(summary(as.factor(C)))
 
   mu = list()
@@ -113,6 +115,11 @@ estimates = function(data,K=3,maxits=100,
   Q=list()
   #for (k in (1:K)){Q[[k]]=diag(p)[,1:q]}
   for (k in (1:K)){Q[[k]]=matrix(rep(1,p*q),ncol=q)}
+   yc = matrix(0,N,p)
+   for (k in (1:K)){
+     nk= length(y[which(C==k),1])	
+     yc[which(C==k),]=y[which(C==k),]-matrix(mu[[k]],nk,p,byrow=TRUE)
+     Q[[k]] = svd(yc[which(C==k),],nu=q,nv=q)$v}
   diff = 10
   iter=0
   loglik=-Inf
@@ -134,11 +141,14 @@ estimates = function(data,K=3,maxits=100,
     print(diff)
 	  loglik_old = loglik
     k = 1
-    if ((sigma2i[1]<0) || (sigma2i[2]<0) || (sigma2i[3]<0)) {loglik = -Inf}else{loglik = ll_mixPCA(y,
+    if ((sigma2i[1]<0) || (sigma2i[2]<0) || (sigma2i[3]<0)) {loglik = -Inf}else{loglik = ll_mixPCA(y,x,
 						            mu=mu,
+						            beta=beta,
                         Q=Q,
                         alphai=alphai,
-                        sigma2i=sigma2i,K,tau)}
+                        sigma2i=sigma2i,
+						            theta2 = theta2,
+						            K,tau,piik=piik)}
     if (verbose) {print(paste("iteration",iter,", LL = ",round(loglik,2)))}
     
     cvce = EM_converged(loglik,loglik_old)$converged				
@@ -149,16 +159,17 @@ estimates = function(data,K=3,maxits=100,
   return(list(piik=piik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai))
   }
 
-ll_mixPCA = function(X,mu=mu,Q=Q,alphai=alphai,sigma2i=sigma2i,K=K,tau=tau){
-  N = nrow(X)
-  p = ncol(X)
+ll_mixPCA = function(y,x,mu=mu,beta=beta,Q=Q,alphai=alphai,sigma2i=sigma2i,theta2=theta2,K=K,tau=tau,piik=piik){
+  N = nrow(y)
+  p = ncol(y)
   tmp=numeric(K)
-  LL=numeric(K)
+  LL=matrix(0,N,K)
   for (k in (1:K)){
-	tmp = (X-matrix(rep(mu[[k]],N),N,p,byrow=TRUE)-t(alphai[[k]])%*%t(Q[[k]]))
-	LL[k] = -N*p*(log(2*pi)+log(sigma2i[k]))-sum(tau[,k] * diag(tmp%*%t(tmp)))
+  	tmp = matrix(rep(mu[[k]],N),N,p,byrow=TRUE)+ t(Q[[k]]%*%beta[[k]]%*%t(x))
+  	vv = theta2 * Q[[k]]%*%t(Q[[k]])+ diag(sigma2i[k],p)
+	  LL[,k] = piik[k]* dmvnorm(y-tmp,rep(0,p),vv,log=FALSE)
 	}
-	L=sum(LL)
+	L=-sum(log(apply(LL,2,sum)))
   return(L)
 }
  

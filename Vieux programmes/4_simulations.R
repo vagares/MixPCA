@@ -44,7 +44,7 @@ Qe3 = matrix(0,p*q,M)
 theta2e = numeric(M)
 sigma2e = matrix(0,K,M)
 err = numeric(M)
-nn=sum(n)
+
 for (i in (1:M)){
   data1=data_gen(n,K,q,p,nx,
              pi,

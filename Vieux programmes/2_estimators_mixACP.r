@@ -85,6 +85,7 @@ estimates = function(data,
                      q = 4,
                      p=10,
                      verbose=TRUE){
+  N = dim(data)[1]
   y = data[,1:p]
   #initialisation
   groupe=1:K
@@ -95,10 +96,12 @@ estimates = function(data,
   mu = list()
   for (k in (1:K)){
 	mu[[k]]=apply(y[which(C==k),],2,mean)}
-  yc = numeric(n)
+  for (k in (1:K)){Q[[k]]=matrix(rep(1,p*q),ncol=q)}
+  yc = matrix(0,N,p)
   for (k in (1:K)){
-	nk= length(y[which(C==k),])	yc[which(C==k),]=y[which(C==k),]-matrix(mu[[k]],nk,p,byrow=TRUE)
-	Q[[k]] = svd(yc[which(C==k),],nu=q,nv=q)$v}
+    nk= length(y[which(C==k),1])	
+    yc[which(C==k),]=y[which(C==k),]-matrix(mu[[k]],nk,p,byrow=TRUE)
+    Q[[k]] = svd(yc[which(C==k),],nu=q,nv=q)$v}
   theta2=1
   sigma2=1
   #Q=list()

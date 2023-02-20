@@ -123,7 +123,7 @@ data_gen_mixAcp = function(n=1000,K = 3,q = 4,p = 10,
     xxk=rep(1,nk)%*%t(muk)+t(Qk%*%t(alphaik))+matrix(rnorm(p*nk,mean=0,sd=sqrt(theta2)),ncol=p,nrow=nk)
     
     
-    pca = PCA(xxk,nc=q)
+    pca = PCA(xxk,nc=q,graph=FALSE)
     U = pca$svd$V
     K = diag(pca$eig[1:q])
     Qk = U%*%sqrt(K-sigma2*diag(rep(1,q)))
@@ -140,7 +140,7 @@ data_gen_mixAcp = function(n=1000,K = 3,q = 4,p = 10,
   colnames(data) = c(paste("y",1:p,sep=""),"g")
   return(list(data = data,Q=Q,sigma2=sigma22, theta2=theta2))
 }
-
+matplot(t(data1$data[,1:p]),col=data1$data$g,type="l")
 data1=data_gen_mixAcp(n=1000,K = 3,q = 4,p = 10,
                s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2), 
                pii = c(0.2,0.35,0.45),
