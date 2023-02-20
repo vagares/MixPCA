@@ -1,9 +1,17 @@
 library(FactoMineR)
+<<<<<<< HEAD
 source("~/Library/CloudStorage/OneDrive-UniversitédeRennes1/RECHERCHE/COOPER/GEOMETRIE(1)/MixPCA-main/2_estimators_mixACP_ungroup_VM.R")
+=======
+#source("~/Library/CloudStorage/OneDrive-UniversitédeRennes1/RECHERCHE/COOPER/GEOMETRIE(1)/MixPCA-main/2_estimators_mixACP_ungroup_VM.R")
+>>>>>>> 03fcd60d3eb159c35378bacc65390d1fa3dcf00e
 
 
 n = 10000
 p = 10
+<<<<<<< HEAD
+=======
+q = 4
+>>>>>>> 03fcd60d3eb159c35378bacc65390d1fa3dcf00e
 
 # je construit une matrice bande diagonale (par simplicité)
 Sigma = diag(rep(1,p))
@@ -20,9 +28,20 @@ image(Sigma[,rev(1:p)])
 W = eigen(Sigma)$vectors[,1:q]  # Est-ce que ça suffit? 
 x = matrix(rnorm(n*q),n,q)
 
+<<<<<<< HEAD
 sig2 = .01
 mu = c(-3,-3,-3,-1,0,0,1,2,2,2)
 X = x%*%t(W)+matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
+=======
+sig2 = 1
+mu = c(-3,-3,-3,-1,0,0,1,2,2,2)
+X = x%*%t(W)+matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
+Xtemp = matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
+#matplot(t(Xtemp),type="l")
+#lines(mu,lwd=2)
+#matplot(t(X),type="l")
+#lines(mu,lwd=2)
+>>>>>>> 03fcd60d3eb159c35378bacc65390d1fa3dcf00e
 
 pca = PCA(X,nc=q)
 U = pca$svd$V
@@ -35,13 +54,21 @@ pca$eig[1:q]
 
 
 Xtilde = x%*%t(Wtilde)+matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
+<<<<<<< HEAD
+=======
+matplot(Xtilde[1:100,],type="l")
+>>>>>>> 03fcd60d3eb159c35378bacc65390d1fa3dcf00e
 pca_tilde = PCA(Xtilde,nc=q)
 pca_tilde$eig[1:q]
 U = pca_tilde$svd$V
 K = diag(pca_tilde$eig[1:q])
 Wtilde = U%*%sqrt(K-sig2*diag(rep(1,q)))
 What = U%*%sqrt(K-sig2*diag(rep(1,q)))
+<<<<<<< HEAD
 
+=======
+#methode PCA
+>>>>>>> 03fcd60d3eb159c35378bacc65390d1fa3dcf00e
 Xhat = x%*%t(What)+matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(sig2)*matrix(rnorm(n*p),n,p)
 par(mfrow=c(1,3))
 image(Sigma[,rev(1:p)])
@@ -55,7 +82,10 @@ est0 = estimates(Xtilde,100,1e-4, q,p)
 str(est0)
 eigen(t(est0$Q[[1]])%*%est0$Q[[1]])$values
 Xest0 = t(est0$alphai[[1]])%*%t(est0$Q[[1]])+matrix(rep(mu,n),n,p,byrow=TRUE)+sqrt(est0$sigma2i)*matrix(rnorm(n*p),n,p)
+<<<<<<< HEAD
 x11()
+=======
+>>>>>>> 03fcd60d3eb159c35378bacc65390d1fa3dcf00e
 par(mfrow=c(2,2))
 image(Sigma[,rev(1:p)])
 title("Cov théorique")
