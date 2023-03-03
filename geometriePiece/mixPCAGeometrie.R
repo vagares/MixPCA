@@ -1,13 +1,13 @@
 ## packages
 library(readxl)
-
+library(fda)
 
 setwd("~/GitHub/MixPCA")
 source("2_estimators.r")
 
 ### chargement jeu de donnees Geometrie
 
-geom = readxl::read_xlsx("geometriePiece/ResultsAddedForExcel.xlsx",col_names=TRUE,skip=1)
+geom = readxl::read_xlsx("C:\\Users\\vagares\\Documents\\MixPCA\\geometriePiece\\ResultsAddedForExcel.xlsx",col_names=TRUE,skip=1)
 colnames(geom)[1] = "type"
 geom$type = as.factor(geom$type)
 #summary(geom)
@@ -44,7 +44,7 @@ dim(Ycoef) # 14 coefficients pour n individus
 
 ### on estime avec mixPCA
 est0 = estimates(cbind(Ycoef,X),K=3,maxits=100,
-                 tol=tol, 
+                 tol=1e-4, 
                  q = 3,
                  p=14,
                  nx=3,

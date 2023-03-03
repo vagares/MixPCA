@@ -65,7 +65,7 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
     {S1 = S1 + tauik[i] * (x[i,] %*%t(x[i,]))
     S2 =S2 + tauik[i] * x[i,] %*%t(alphaik[,i])
     }
-    beta[[k]]= solve(S1)%*%S2
+    if (svd(S1)$d[nx]>10^(-8)) {beta[[k]]= solve(S1)%*%S2}else{beta[[k]]= solve(S1+diag(10^(-8),nx))%*%S2}
     #betak = matrix(as.numeric(beta[[k]]),q,q)
     for (i in (1:nn)){
     theta2i[i,k] =  tauik[i] * (alphai2k[i]  -2* t(x[i,])%*%t(beta[[k]])%*%alphaik[,i]+t(x[i,])%*%t(beta[[k]])%*%beta[[k]]%*%x[i,])
@@ -133,7 +133,7 @@ estimates = function(data,K=3,maxits=100,
     Estepresults = Estep(n,K,q,p,nx,piik,mu,beta,theta2,sigma2,x,y,Q,C)
     alphai=Estepresults$alphai;alphai2=Estepresults$alphai2;alphai22=Estepresults$alphai22;alphai2Q=Estepresults$alphai2Q;tau=Estepresults$tau
     
-    Mstepresults = Mstep(n,K,q,p,nx=4,x,y,z,C,old.mu,alphai,alphai2,alphai22, alphai2Q,tau)
+    Mstepresults = Mstep(n,K,q,p,nx,x,y,z,C,old.mu,alphai,alphai2,alphai22, alphai2Q,tau)
     piik=Mstepresults$piik;beta=Mstepresults$beta;mu=Mstepresults$mu;Q=Mstepresults$Q;theta2=Mstepresults$theta2;sigma2=Mstepresults$sigma2;sigma2i=Mstepresults$sigma2i
     diff1=numeric(K)
     for (k in (1:K)){diff1[k] = sum((piik[k]-old.piik[k])^2)+sum((mu[[k]] - old.mu[[k]])^2)+sum((Q[[k]] - old.Q[[k]])^2) + sum((beta[[k]] - old.beta[[k]])^2)}
