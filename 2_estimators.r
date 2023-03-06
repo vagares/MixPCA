@@ -156,7 +156,7 @@ estimates = function(data,K=3,maxits=100,
   }
   G=numeric(N)
   G=apply(tau,1,which.max)
-  return(list(piik=piik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai))
+  return(list(piik=piik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai,tau=tau))
   }
 
 ll_mixPCA = function(y,x,mu=mu,beta=beta,Q=Q,alphai=alphai,sigma2i=sigma2i,theta2=theta2,K=K,tau=tau,piik=piik){

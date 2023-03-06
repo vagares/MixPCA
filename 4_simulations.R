@@ -92,7 +92,8 @@ for (i in (1:M)){
       alphai[[1]] = matrix(rep(NA,n*q),q,n)
       alphai[[2]] = matrix(rep(NA,n*q),q,n)
       alphai[[3]] = matrix(rep(NA,n*q),q,n)
-      list(piik=rep(NA,3),mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai)
+      tau = matrix(rep(NA,n*3),n,3)
+      list(piik=rep(NA,3),mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai,tau=tau)
     })
   # est0 = estimates(X,K=3,maxits=100,
   #                  tol=1e-4, 
@@ -117,12 +118,27 @@ for (i in (1:M)){
   Xest1[which(est1$G == 1),1:p]=rep(1,nn1)%*%t(est1$mu[[1]])+t(est1$Q[[1]]%*%t(alphai1))+matrix(rnorm(p*nn1,mean=0,sd=sqrt(est1$theta2)),ncol=p,nrow=nn1)
   x2 = data1$data[est1$G == 2,(p+1):(p+nx)]
   alphai2 = t(est1$beta[[2]]%*%t(x2)) + matrix(rnorm(nn2*q,mean=0,sd=sqrt(est1$sigma2)),ncol=q)
-  Xest1[est1$G == 2,]=rep(1,nn2)%*%t(est1$mu[[2]])+t(est1$Q[[2]]%*%t(alphai2))+matrix(rnorm(p*nn2,mean=0,sd=sqrt(est1$theta2)),ncol=p,nrow=nn2)
+  Xest1[which(est1$G == 2),1:p]=rep(1,nn2)%*%t(est1$mu[[2]])+t(est1$Q[[2]]%*%t(alphai2))+matrix(rnorm(p*nn2,mean=0,sd=sqrt(est1$theta2)),ncol=p,nrow=nn2)
   x3 = data1$data[est1$G == 3,(p+1):(p+nx)]
   alphai3 = t(est1$beta[[3]]%*%t(x3)) + matrix(rnorm(nn3*q,mean=0,sd=sqrt(est1$sigma2)),ncol=q)
-  Xest1[est1$G == 3,]=rep(1,nn3)%*%t(est1$mu[[3]])+t(est1$Q[[3]]%*%t(alphai3))+matrix(rnorm(p*nn3,mean=0,sd=sqrt(est1$theta2)),ncol=p,nrow=nn3)
+  Xest1[which(est1$G == 3),1:p]=rep(1,nn3)%*%t(est1$mu[[3]])+t(est1$Q[[3]]%*%t(alphai3))+matrix(rnorm(p*nn3,mean=0,sd=sqrt(est1$theta2)),ncol=p,nrow=nn3)
   
   covXest[,i] = as.vector(cov(Xest1))}else{covXest[,i] = rep(NA,p*p)}
+  
+  if (is.na(est1$piik[1]) ==FALSE){
+    Xest1 = matrix(0,n,p)
+    for (i in (1:n)){
+    x1 = data1$data[i,(p+1):(p+nx)]
+    alphai1 = t(est1$beta[[1]]%*%t(x1)) +rnorm(q,mean=0,sd=sqrt(est1$sigma2))
+    X11=t(est1$mu[[1]])+t(est1$Q[[1]]%*%t(alphai1))+rnorm(p,mean=0,sd=sqrt(est1$theta2))
+    alphai2 = t(est1$beta[[2]]%*%t(x1)) + rnorm(q,mean=0,sd=sqrt(est1$sigma2))
+    X12=t(est1$mu[[2]])+t(est1$Q[[2]]%*%t(alphai2))+rnorm(p,mean=0,sd=sqrt(est1$theta2))
+    alphai3 = t(est1$beta[[3]]%*%t(x1)) +rnorm(q,mean=0,sd=sqrt(est1$sigma2))
+    X13=t(est1$mu[[3]])+t(est1$Q[[3]]%*%t(alphai3))+rnorm(p,mean=0,sd=sqrt(est1$theta2))
+    
+    Xest1[i,1:p] = est1$tau[i,1] * X11 + est1$tau[i,2] *X12 + est1$tau[i,3] *X13
+    }
+    covXest[,i] = as.vector(cov(Xest1))}else{covXest[,i] = rep(NA,p*p)}
   #table(est1$G,data1$data$g)
   pike[,i] = est1$piik
   mu1e[,i] = est1$mu[[n1]] - mu[,1]
