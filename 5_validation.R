@@ -1,9 +1,15 @@
 library(fields)
 
+
+
+
 B=50
 Xest0 = array(0,c(n,p,B))
 
 for (b in 1:B){
+  load(paste("simulations0323/SimMars-i=",b,".Rdata",sep=""))
+  est0=sim$est
+  X = sim$datasim
   g = numeric(n)
   u=runif(n)
   piic=cumsum(est0$piik)
@@ -21,6 +27,7 @@ for (b in 1:B){
 
 # comparaison des covariances (pour un tirage)
 par(mfrow=c(1,2))
+
 CX = cov(X[,-11])
 CXsim = cov(Xest0[,,1])
 image.plot(CX,zlim=range(CX,CXsim))

@@ -41,7 +41,7 @@ Estep = function(n,K = 3,q = 4,p = 10,nx=4,
 }
 
 Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
-                 x,y,z,C,muold,alphai,alphai2,alphai22, alphai2Q,tau){
+                 x,y,z,C,old.mu,alphai,alphai2,alphai22, alphai2Q,tau){
   piik = apply(tau,2,mean)
   mu = list()
   Q = list()
@@ -55,7 +55,7 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
     alphai2k = alphai2[[k]]
     alphai22k = alphai22[[k]]
     alphai2Qk = alphai2Q[[k]]
-    muoldk=muold[[k]]
+    old.muk=old.mu[[k]]
     #tau  = as.numeric(z==k)
     x=as.matrix(x)
     y=as.matrix(y)
@@ -65,7 +65,7 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
     {S1 = S1 + tauik[i] * (x[i,] %*%t(x[i,]))
     S2 =S2 + tauik[i] * x[i,] %*%t(alphaik[,i])
     }
-    if (svd(S1)$d[nx]>10^(-8)) {beta[[k]]= solve(S1)%*%S2}else{beta[[k]]= solve(S1+diag(10^(-8),nx))%*%S2}
+    if (svd(S1)$d[nx]>10^(-8)) {beta[[k]]= t(solve(S1)%*%S2)}else{beta[[k]]= t(solve(S1+diag(10^(-8),nx))%*%S2)}
     #betak = matrix(as.numeric(beta[[k]]),q,q)
     for (i in (1:nn)){
     theta2i[i,k] =  tauik[i] * (alphai2k[i]  -2* t(x[i,])%*%t(beta[[k]])%*%alphaik[,i]+t(x[i,])%*%t(beta[[k]])%*%beta[[k]]%*%x[i,])
@@ -74,7 +74,7 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
     S1= 0
     S2 = 0
     for (i in (1:nn))
-    {S1 = S1 + tauik[i] * (y[i,] - muoldk) %*%t(alphaik[,i])
+    {S1 = S1 + tauik[i] * (y[i,] - old.muk) %*%t(alphaik[,i])
     S2 = S2 + tauik[i] * matrix(alphai22k[,i],nrow=q,ncol=q)}
     Q[[k]]= S1 %*% solve(S2)
     
@@ -149,6 +149,7 @@ estimates = function(data,K=3,maxits=100,
                         sigma2i=sigma2i,
 						            theta2 = theta2,
 						            K,tau,piik=piik)}
+    
     if (verbose) {print(paste("iteration",iter,", LL = ",round(loglik,2)))}
     
     cvce = EM_converged(loglik,loglik_old)$converged				
