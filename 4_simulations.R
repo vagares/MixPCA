@@ -158,6 +158,37 @@ for (i in (1:M)){
 }
 covXmean = matrix(apply(covX,1,mean),p,p)
 covXestmean = matrix(apply(covXest,1,mean),p,p)
+
+sqrt(sum((apply(mu1e,1,mean,na.rm=TRUE))^2))/p
+sqrt(sum((apply(mu2e,1,mean,na.rm=TRUE))^2))/p
+sqrt(sum((apply(mu3e,1,mean,na.rm=TRUE))^2))/p
+
+sqrt(mean((1/p)*apply(((t(mu1e) - rep(1,100)%*%t(apply(mu1e,1,mean,na.rm=TRUE))))^2,1,sum,na.rm=TRUE))) 
+sqrt(mean((1/p)*apply(((t(mu2e) - rep(1,100)%*%t(apply(mu2e,1,mean,na.rm=TRUE))))^2,1,sum,na.rm=TRUE))) 
+sqrt(mean((1/p)*apply(((t(mu3e) - rep(1,100)%*%t(apply(mu3e,1,mean,na.rm=TRUE))))^2,1,sum,na.rm=TRUE))) 
+
+
+sqrt(sum((apply(beta1e,1,mean,na.rm=TRUE))^2))/16
+sqrt(sum((apply(beta2e,1,mean,na.rm=TRUE))^2))/16
+sqrt(sum((apply(beta3e,1,mean,na.rm=TRUE))^2))/16
+
+sqrt(mean((1/16)*apply(((t(beta1e) - rep(1,100)%*%t(apply(beta1e,1,mean,na.rm=TRUE))))^2,1,sum,na.rm=TRUE))) 
+sqrt(mean((1/16)*apply(((t(beta2e) - rep(1,100)%*%t(apply(beta2e,1,mean,na.rm=TRUE))))^2,1,sum,na.rm=TRUE))) 
+sqrt(mean((1/16)*apply(((t(beta3e) - rep(1,100)%*%t(apply(beta3e,1,mean,na.rm=TRUE))))^2,1,sum,na.rm=TRUE))) 
+
+
+mean(sigma2e[1,],na.rm=TRUE)
+mean(sigma2e[2,],na.rm=TRUE)
+mean(sigma2e[3,],na.rm=TRUE)
+
+sqrt(mean((sigma2e[1,] - mean(sigma2e[1,],na.rm=TRUE))^2,na.rm=TRUE))
+sqrt(mean((sigma2e[2,] - mean(sigma2e[2,],na.rm=TRUE))^2,na.rm=TRUE))
+sqrt(mean((sigma2e[3,] - mean(sigma2e[3,],na.rm=TRUE))^2,na.rm=TRUE))
+
+
+mean(theta2e,na.rm=TRUE)
+sqrt(mean((theta2e - mean(theta2e,na.rm=TRUE))^2,na.rm=TRUE))
+
 x11()
 par(col=2)
 image(covXmean[,rev(1:p)])
