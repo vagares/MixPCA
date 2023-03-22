@@ -85,7 +85,7 @@ Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
   }
   theta2 = (1/(nn*q))*sum(theta2i)
   sigma2 = (1/(nn*p))*sum(sigma2i)
-  sigma2i = sigma2i / nn
+  sigma2i = sigma2i / (nn*p)
   return(list(piik=piik,beta = beta, mu=mu,Q=Q,theta2=theta2,sigma2=sigma2,sigma2i=sigma2i))
 }
 
