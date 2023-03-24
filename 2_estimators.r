@@ -108,18 +108,41 @@ estimates = function(data,K=3,maxits=100,
 
   mu = list()
   for (k in (1:K)){mu[[k]]=apply(y[which(C==k),],2,mean)}
-  beta = list()
-  for (k in (1:K)){beta[[k]]= matrix(rnorm(q*nx,mean=0,sd=2),ncol=nx)}
-  theta2=1
-  sigma2=1
+  # for (k in (1:K)){
+  #   Z = t(t(y[which(C==k),]) - mu[[k]])
+  #   pca = PCA(Z,ncp = q, graph = FALSE)
+  #   U = pca$svd$V
+  #   K = diag(pca$eig[1:q])
+  #   Q[[k]] = U%*%sqrt(K)
+  #   sigma2=
+  #   
+  # }
   Q=list()
+  sigma2_t=numeric(K)
+  theta2_t=numeric(K)
+  beta = list()
   #for (k in (1:K)){Q[[k]]=diag(p)[,1:q]}
-  for (k in (1:K)){Q[[k]]=matrix(rep(1,p*q),ncol=q)}
-   # yc = matrix(0,N,p)
-   # for (k in (1:K)){
-   #   nk= length(y[which(C==k),1])	
-   #   yc[which(C==k),]=y[which(C==k),]-matrix(mu[[k]],nk,p,byrow=TRUE)
-   #   Q[[k]] = svd(yc[which(C==k),],nu=q,nv=q)$v}
+  for (k in (1:K)){
+      nk = length(C[which(C==k)])
+      Z = t(t(y[which(C==k),]) - mu[[k]])
+      pca = PCA(Z,ncp = q, graph = FALSE)
+      V = pca$svd$V
+      U = pca$svd$U
+      KK = diag(pca$eig[1:q])
+      Q[[k]] = U%*%sqrt(KK)
+      sigma2_t[k] = (sd(yc[which(C==k),] -U%*%sqrt(KK)%*%t(V)))^2
+      xk = as.matrix(x[which(C==k),])
+      xx =U%*%sqrt(KK)%*%t(V)
+      lm_xk = lm(xx ~ xk)
+      beta[[k]] = t(lm_xk$coefficients[-1,])
+      theta2_t[k] = sd(lm_xk$residuals)
+  }
+  theta2 = mean(theta2_t)
+  sigma2 = mean(sigma2_t)
+  #beta = list()
+  #for (k in (1:K)){beta[[k]]= matrix(rnorm(q*nx,mean=0,sd=2),ncol=nx)}
+  #theta2=1
+  #sigma2=1
   diff = 10
   iter=0
   loglik=-Inf
@@ -190,7 +213,7 @@ EM_converged <-
       delta_loglik = abs(loglik - previous_loglik);
       avg_loglik = (abs(loglik) + abs(previous_loglik) + threshold)/2;
       bb = ((delta_loglik/avg_loglik) < threshold)
-      if (bb) {converged = 1}
+      if (is.na(bb)==FALSE){if (bb) {converged = 1}}
     }
     
     res <- NULL
