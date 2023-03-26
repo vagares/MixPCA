@@ -29,7 +29,7 @@ mu = matrix(c((0:(p-1))^2/(2*p),2*cos((0:(p-1))/2)+1, rep(1,p)),nrow = p,ncol=K)
 s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2)
 betat = matrix(rnorm(nx*q,mean=0,sd=2),ncol=nx)
 beta = matrix(rnorm(nx*q,mean=0,sd=2),ncol=nx)
-SNR2 = 3
+SNR2 = 100
 SNR1 = 100
 sig2 = .01
 tol = 1e-4

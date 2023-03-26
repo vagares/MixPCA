@@ -135,7 +135,7 @@ estimates = function(data,K=3,maxits=100,
       xx =U%*%sqrt(KK)%*%t(V)
       lm_xk = lm(xx ~ xk)
       beta[[k]] = t(lm_xk$coefficients[-1,])
-      theta2_t[k] = sd(lm_xk$residuals)
+      theta2_t[k] = (sd(lm_xk$residuals))^2
   }
   theta2 = mean(theta2_t)
   sigma2 = mean(sigma2_t)
