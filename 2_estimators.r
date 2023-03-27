@@ -129,8 +129,8 @@ estimates = function(data,K=3,maxits=100,
       V = pca$svd$V
       U = pca$svd$U
       KK = diag(pca$eig[1:q])
-      Q[[k]] = (1/sqrt(nk))*(U%*%sqrt(KK))
-      sigma2_t[k] = (sd(yc[which(C==k),] -U%*%sqrt(KK)%*%t(V)))^2
+      Q[[k]] = t((1/sqrt(nk))*(U%*%sqrt(KK)))
+      sigma2_t[k] = (sd(Z -U%*%sqrt(KK)%*%t(V)))^2
       xk = as.matrix(x[which(C==k),])
       xx =U%*%sqrt(KK)%*%t(V)
       lm_xk = lm(xx ~ xk)
