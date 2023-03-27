@@ -19,7 +19,7 @@ source("2_estimators.r")
 
 
 B=1
-q = 4
+q = 5
 nx=4
 p=10
 n = 10000
