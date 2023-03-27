@@ -30,7 +30,7 @@ data_gen = function(n=1000,K = 3,q = 4,p = 10,nx=4,
   gg=NULL
   for (k in (1:K)){
     nk=sum(as.numeric(g==k)) 
-    betak=beta
+    betak=beta[[k]]
     xk = matrix(runif(nx*nk,-1,1),ncol=nx)
     bkGi = t(betak%*%t(xk))
     sigma2 = (sd(bkGi)/SNR1)^2
@@ -49,10 +49,10 @@ data_gen = function(n=1000,K = 3,q = 4,p = 10,nx=4,
     }
     Qk = eigen(Sigma)$vectors[,1:q]  # Est-ce que ça suffit? 
     xxk=rep(1,nk)%*%t(muk)+t(Qk%*%t(alphaik))+matrix(rnorm(p*nk,mean=0,sd=sqrt(theta2)),ncol=p,nrow=nk)
-    pca = PCA(xxk,nc=q)
+    pca = PCA(xxk,nc=q,graph=FALSE)
     U = pca$svd$V
     K = diag(pca$eig[1:q])
-    Qk = U%*%sqrt(K-sigma2*diag(rep(1,q)))
+    Qk = U%*%sqrt(K-sigma2*diag(rep(1,q))) #VM : on retrouve les mêmes Qk (?)
 
     Q[[k]]=Qk
     yk=rep(1,nk)%*%t(muk)+t(Qk%*%t(alphaik))+matrix(rnorm(p*nk,mean=0,sd=sqrt(theta2)),ncol=p,nrow=nk)
@@ -68,16 +68,16 @@ data_gen = function(n=1000,K = 3,q = 4,p = 10,nx=4,
   return(list(data = data,Q=Q,sigma2=sigma22, theta2=theta2))
 }
 
-data1=data_gen(n=1000,K = 3,q = 4,p = 10,nx=4,
-                s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2), 
-                pii = c(0.2,0.35,0.45),
-                mu = matrix(c((0:9)^2/20,2*cos((0:9)/2)+1, rep(1,10)),nrow = 10,ncol=3),
-                beta = matrix(rnorm(4*4,mean=0,sd=2),ncol=4),
-                SNR1 = 100,
-                SNR2 = 3)
-
-p=10
-matplot(t(data1$data[,1:p]),col=data1$data$g,type="l")
+# data1=data_gen(n=1000,K = 3,q = 4,p = 10,nx=4,
+#                 s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2), 
+#                 pii = c(0.2,0.35,0.45),
+#                 mu = matrix(c((0:9)^2/20,2*cos((0:9)/2)+1, rep(1,10)),nrow = 10,ncol=3),
+#                 beta = matrix(rnorm(4*4,mean=0,sd=2),ncol=4),
+#                 SNR1 = 100,
+#                 SNR2 = 3)
+# 
+# p=10
+# matplot(t(data1$data[,1:p]),col=data1$data$g,type="l",lty=1)
 
 
 data_gen_mixAcp = function(n=1000,K = 3,q = 4,p = 10,
@@ -140,13 +140,13 @@ data_gen_mixAcp = function(n=1000,K = 3,q = 4,p = 10,
   colnames(data) = c(paste("y",1:p,sep=""),"g")
   return(list(data = data,Q=Q,sigma2=sigma22, theta2=theta2))
 }
-matplot(t(data1$data[,1:p]),col=data1$data$g,type="l")
-data1=data_gen_mixAcp(n=1000,K = 3,q = 4,p = 10,
-               s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2), 
-               pii = c(0.2,0.35,0.45),
-               mu = matrix(c((0:9)^2/20,2*cos((0:9)/2)+1, rep(1,10)),nrow = 10,ncol=3),
-               SNR2 = 3,
-               sigma2 = 0.01)
+# matplot(t(data1$data[,1:p]),col=data1$data$g,type="l")
+# data1=data_gen_mixAcp(n=1000,K = 3,q = 4,p = 10,
+#                s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2), 
+#                pii = c(0.2,0.35,0.45),
+#                mu = matrix(c((0:9)^2/20,2*cos((0:9)/2)+1, rep(1,10)),nrow = 10,ncol=3),
+#                SNR2 = 3,
+#                sigma2 = 0.01)
 
 data_gen_mixAcponegroup = function(n=1000,q = 4,p = 10,
                            s = c(0.7,-0.4),
@@ -183,8 +183,8 @@ data_gen_mixAcponegroup = function(n=1000,q = 4,p = 10,
   return(list(data = data,W=W,x=x))
 }
 
-data1=data_gen_mixAcponegroup(n=1000,q = 4,p = 10,
-                              s = c(0.7,-0.4),
-                              mu = c(-3,-3,-3,-1,0,0,1,2,2,2),
-                              sig2 = .01)
-matplot(t(data1$data[,1:p]),type="l")
+# data1=data_gen_mixAcponegroup(n=1000,q = 4,p = 10,
+#                               s = c(0.7,-0.4),
+#                               mu = c(-3,-3,-3,-1,0,0,1,2,2,2),
+#                               sig2 = .01)
+# matplot(t(data1$data[,1:p]),type="l")
