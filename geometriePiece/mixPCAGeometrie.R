@@ -17,7 +17,7 @@ geom$type = as.factor(geom$type)
 
 ### on prend 1 cahoutchouc (le premier)
 geom = split(geom,geom$type)$P225M909
-X = geom[,2:4]
+Xgeom = geom[,2:4]
 Y = geom[,5:ncol(geom)]
 Gap = seq(30,7,by=-0.5)
 # matplot(Gap,t(Y),type="l")
@@ -60,17 +60,17 @@ Ycoef = t(smoothdata$fd$coefs)
 dim(Ycoef) # 14 coefficients pour n individus
 
 ### on estime avec mixPCA
-data = cbind(Ycoef,X)
-K=3;maxits=100;tol=1e-4; q = 4;p=14;nx=3
+data = cbind(Ycoef,Xgeom)
+K=3;maxits=100;tol=1e-4; q = 3;p=14;nx=3
 
-est0 = estimates(cbind(Ycoef,X),K=3,maxits=100,
+est0 = estimates(cbind(Ycoef,Xgeom),K=3,par_init=NULL,maxits=100,
                  tol=1e-4, 
-                 q = 4,
+                 q = 3,
                  p=14,
                  nx=3,
                  verbose=TRUE)
 
-save(est0,file="geometriePiece/resultsGeom-08032023.Rdata")
+save(est0,file="geometriePiece/resultsGeom-31032023.Rdata")
 #load("geometriePiece/resultsGeom-08032023.Rdata")
 
 est0$piik  # taille des groupes
@@ -113,7 +113,7 @@ est0$Q
 Qfct = lapply(est0$Q,FUN=function(x) {ft =fd(x,splbasis) ; return(eval.fd(Gap,ft))})
 par(mfrow=c(1,3))
 for (i in 1:K){
-  matplot(Gap,Qfct[[i]],type="l",col=2:4)
+  matplot(Gap,Qfct[[i]],type="l",col=2:5)
 }
 ### dans Q[[i]], est ce qu'on a les 3 composantes du groupe i ou la composante i pour les 3 groupes (on pourrait croire qu'on a la deuxieme) 
 
@@ -125,59 +125,32 @@ k=1
 for(i in 1:3){
   matplot(Gap,t(Y[which(est0$G==k),]),type="l",col="gray",ylab="Efforts",ylim=c(0,42),lwd=0.5)
   lines(Gap,mufct[,k],col=1)
-  lines(Gap,mufct[,k]+2*Qfct[[k]][,i],type="p",pch="+",col=i)
-  lines(Gap,mufct[,k]-2*Qfct[[k]][,i],type="p",pch="-",col=i,lwd=2)
+  lines(Gap,mufct[,k]+4*Qfct[[k]][,i],type="p",pch="+",col=i)
+  lines(Gap,mufct[,k]-4*Qfct[[k]][,i],type="p",pch="-",col=i,lwd=2)
 }
 
 #groupe 2
 par(mfrow=c(1,3))
 k=2
-for(i in 1:q){
+for(i in 1:3){
   matplot(Gap,t(Y[which(est0$G==k),]),type="l",col="gray",ylab="Efforts",ylim=c(0,42),lwd=0.5)
   lines(Gap,mufct[,k],col=1)
-  lines(Gap,mufct[,k]+2*Qfct[[k]][,i],type="p",pch="+",col=i)
-  lines(Gap,mufct[,k]-2*Qfct[[k]][,i],type="p",pch="-",col=i,lwd=2)
+  lines(Gap,mufct[,k]+4*Qfct[[k]][,i],type="p",pch="+",col=i)
+  lines(Gap,mufct[,k]-4*Qfct[[k]][,i],type="p",pch="-",col=i,lwd=2)
 }
 
 #groupe 3
 par(mfrow=c(1,3))
 k=3
-for(i in 1:q){
+for(i in 1:3){
   matplot(Gap,t(Y[which(est0$G==k),]),type="l",col="gray",ylab="Efforts",ylim=c(0,42),lwd=0.5)
   lines(Gap,mufct[,k],col=1)
-  lines(Gap,mufct[,k]+2*Qfct[[k]][,i],type="p",pch="+",col=i)
-  lines(Gap,mufct[,k]-2*Qfct[[k]][,i],type="p",pch="-",col=i,lwd=2)
+  lines(Gap,mufct[,k]+4*Qfct[[k]][,i],type="p",pch="+",col=i)
+  lines(Gap,mufct[,k]-4*Qfct[[k]][,i],type="p",pch="-",col=i,lwd=2)
 }
 
-## un peu bizarre ces graphes, les q composantes ont l'air d'etre presque les memes dans un groupe donne
-## on essaye de representer dans "l'autre sens"
-par(mfrow=c(1,3))
-# groupe 1
-k=1
-for(i in 1:q){
-  matplot(Gap,t(Y[which(est0$G==k),]),type="l",col="gray",ylab="Efforts",ylim=c(0,42),lwd=0.5)
-  lines(Gap,mufct[,k],col=1)
-  lines(Gap,mufct[,k]+2*Qfct[[i]][,k],type="p",pch="+",col=i)
-  lines(Gap,mufct[,k]-2*Qfct[[i]][,k],type="p",pch="-",col=i,lwd=2)
-}
-
-# groupe 2
-k=2
-for(i in 1:q){
-  matplot(Gap,t(Y[which(est0$G==k),]),type="l",col="gray",ylab="Efforts",ylim=c(0,42),lwd=0.5)
-  lines(Gap,mufct[,k],col=1)
-  lines(Gap,mufct[,k]+2*Qfct[[i]][,k],type="p",pch="+",col=i)
-  lines(Gap,mufct[,k]-2*Qfct[[i]][,k],type="p",pch="-",col=i,lwd=2)
-}
-
-# groupe 3
-k=3
-for(i in 1:q){
-  matplot(Gap,t(Y[which(est0$G==k),]),type="l",col="gray",ylab="Efforts",ylim=c(0,42),lwd=0.5)
-  lines(Gap,mufct[,k],col=1)
-  lines(Gap,mufct[,k]+2*Qfct[[i]][,k],type="p",pch="+",col=i)
-  lines(Gap,mufct[,k]-2*Qfct[[i]][,k],type="p",pch="-",col=i,lwd=2)
-}
+## les composantes semblent plus interpretables maintenant, on constate
+## que dans certains groupes, elles ne semblent pas être dans le bon ordre...
 
 ##### coefficients de regression beta
 

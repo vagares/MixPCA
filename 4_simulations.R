@@ -18,22 +18,23 @@ source("2_estimators.r")
 
 
 
-M=100
+M=1
 q = 4
 nx=4
 p=10
+K=3
 n = 10000
 pii = c(0.2,0.35,0.45) # n'est pas utilisé
-mu = matrix(c((0:9)^2/20,2*cos((0:9)/2)+1, rep(1,10)),nrow = 10,ncol=3)
+mustar = matrix(c((0:(p-1))^2/(2*p),2*cos((0:(p-1))/2)+1, rep(1,p)),nrow = p,ncol=K)
 s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2)
-betat = matrix(rnorm(4*4,mean=0,sd=2),ncol=4)
-beta = matrix(rnorm(4*4,mean=0,sd=2),ncol=4)
+betat = matrix(rnorm(q*nx,mean=0,sd=2),ncol=nx)
+betastar = matrix(rnorm(q*nx,mean=0,sd=2),ncol=nx)
 SNR2 = 3
 SNR1 = 100
 sig2 = .01
 tol = 1e-4
 maxit = 100
-K=3
+
 covXpca = matrix(0,p*p,M)
 covXest = matrix(0,p*p,M)
 covX = matrix(0,p*p,M)
@@ -55,12 +56,11 @@ for (i in (1:M)){
   data1=data_gen(n=n,K = 3,q = 4,p = 10,nx=4,
                  s = s, 
                  pii = pii,
-                 mu = mu,
-                 beta = beta,
+                 mu = mustar,
+                 beta = betastar,
                  SNR1 = SNR1,
                  SNR2 = SNR2)
   X=data1$data
-  covX[,i] = as.vector(cov(X[1:p]))
   
   est1  =   tryCatch(
     expr  = {est0 = estimates(X,K=3,maxits=100,

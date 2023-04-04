@@ -9,7 +9,7 @@ Xest0 = array(0,c(n,p,B))
 for (b in 1:B){
   load(paste("simulations0323/SimMars-i=",b,".Rdata",sep=""))
   est0=sim$est
-  X = sim$datasim
+  X = sim$datasim$data
   g = numeric(n)
   u=runif(n)
   piic=cumsum(est0$piik)
