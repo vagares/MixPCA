@@ -71,7 +71,7 @@ est0 = estimates(cbind(Ycoef,Xgeom),K=3,par_init=NULL,maxits=100,
                  verbose=TRUE)
 
 save(est0,file="geometriePiece/resultsGeom-31032023.Rdata")
-#load("geometriePiece/resultsGeom-08032023.Rdata")
+load("geometriePiece/resultsGeom-31032023.Rdata")
 
 est0$piik  # taille des groupes
 est0$theta2 # on obtient une valeur bizarre (très grande)
