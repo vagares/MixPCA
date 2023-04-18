@@ -119,19 +119,19 @@ jma = which.max(est0$piik)
 j = setdiff(1:3,c(jmi,jma))
 P = data1$Q[[1]]%*%beta[[1]]
 plot(P,pch=20)
-plot(est0$Q[[jmi]]%*%est0$beta[[jmi]][,2:3],pch=20,
-     xlim = range(P[,1]),ylim=range(P[,2]))
+points(est0$Q[[jmi]]%*%est0$beta[[jmi]][,2:3],pch="x",
+     xlim = range(P[,1]),ylim=range(P[,2]),col=2)
 
 P = data1$Q[[2]]%*%beta[[2]]
 plot(P,pch=20)
-plot(est0$Q[[j]]%*%est0$beta[[j]][,2:3],pch=20,
-     xlim = range(P[,1]),ylim=range(P[,2]))
+points(est0$Q[[j]]%*%est0$beta[[j]][,2:3],pch="x",
+     xlim = range(P[,1]),ylim=range(P[,2]),col=2)
 
 
 P = data1$Q[[3]]%*%beta[[3]]
 plot(P,pch=20)
-plot(est0$Q[[jma]]%*%est0$beta[[jma]][,2:3],pch=20,
-     xlim = range(P[,1]),ylim=range(P[,2]))
+points(est0$Q[[jma]]%*%est0$beta[[jma]][,2:3],pch="x",
+     xlim = range(P[,1]),ylim=range(P[,2]),col=2)
 
 
 

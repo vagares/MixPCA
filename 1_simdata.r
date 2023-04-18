@@ -5,30 +5,41 @@ library(FactoMineR)
 #########################################################################
 
 data_gen = function(n=1000,K = 3,q = 3,p = 10,nx=4,
-                s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2),
-                pii = c(0.2,0.35,0.45),
-                mu = matrix(c((0:9)^2/20,2*cos((0:9)/2)+1, rep(1,10)),nrow = 10,ncol=3),
-                beta = matrix(rnorm(4*3,mean=0,sd=2),ncol=4),
-                SNR1 = 5,
-                SNR2 = 3){
-
+                    s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2),
+                    pii = c(0.2,0.35,0.45),
+                    mu = matrix(c((0:9)^2/20,2*cos((0:9)/2)+1, rep(1,10)),nrow = 10,ncol=3),
+                    beta,
+                    SNR1 = 5,
+                    SNR2 = 3){
+  
   sigma2 = (mean(apply(mu,2,sd))/SNR2)^2
   y = NULL
   x = NULL
   g = NULL
   Q = list()
   theta22 = list()
-
+  
   g = sample(1:K,size=n,replace=TRUE,prob=pii)
-
+  
+  for (k in (1:K)){
+    nk=sum(as.numeric(g==k))
+    #betak=beta
+    xk = matrix(runif(nx*nk,-1,1),ncol=nx)
+    betak=beta[[k]] 
+    bkGi = t(betak%*%t(xk))
+    theta2 = (mean(apply(bkGi,1,sd))/SNR1)^2
+    if (min(theta2)>0) {theta22[[k]] = theta2
+    } else {theta22[[k]] = sigma2}
+  }
+  theta2 = mean(sqrt(unlist(theta22)))^2
+  
+  
   gg=NULL
   for (k in (1:K)){
     nk=sum(as.numeric(g==k))
-    betak=beta
     xk = matrix(runif(nx*nk,-1,1),ncol=nx)
+    betak=beta[[k]] 
     bkGi = t(betak%*%t(xk))
-    theta2 = (mean(apply(bkGi,1,sd))/SNR1)^2
-    theta22[[k]] = theta2
     piik = pii[k]
     muk = mu[,k]
     alphaik = bkGi + matrix(rnorm(nk*q,mean=0,sd=sqrt(theta2)),ncol=q)
@@ -46,8 +57,8 @@ data_gen = function(n=1000,K = 3,q = 3,p = 10,nx=4,
     pca = PCA(xxk-rep(1,nk)%*%t(muk),scale.unit=FALSE,nc=q,graph=FALSE)
     U = pca$svd$V
     K = diag(pca$eig[1:q])
-    Qk = U%*%sqrt(K-sigma2*diag(rep(1,q)))
-
+    Qk = (U%*%sqrt(K-sigma2*diag(rep(1,q))))#/sqrt(theta2)
+    
     Q[[k]]=Qk
     yk=rep(1,nk)%*%t(muk)+t(Qk%*%t(alphaik))+matrix(rnorm(p*nk,mean=0,sd=sqrt(sigma2)),ncol=p,nrow=nk)
     y=rbind(y,yk)
@@ -57,9 +68,9 @@ data_gen = function(n=1000,K = 3,q = 3,p = 10,nx=4,
     #matlines(muk+as.vector(Qk%*%alphaik),lty=1)
     #matlines(muk,lty=1)
   }
-    data = data.frame(y = y,x=x,g=gg)
-    colnames(data) = c(paste("y",1:p,sep=""), paste("x",1:nx,sep=""),"g")
-  return(list(data = data,Q=Q,sigma2=sigma2, theta2=theta22))
+  data = data.frame(y = y,x=x,g=gg)
+  colnames(data) = c(paste("y",1:p,sep=""), paste("x",1:nx,sep=""),"g")
+  return(list(data = data,Q=Q,sigma2=sigma2, theta2=theta2))
 }
 
 # data1=data_gen(n=1000,K = 3,q = 4,p = 10,nx=4,

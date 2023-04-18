@@ -8,7 +8,7 @@ data_gen = function(n=1000,K = 3,q = 3,p = 10,nx=4,
                     s = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2),
                     pii = c(0.2,0.35,0.45),
                     mu = matrix(c((0:9)^2/20,2*cos((0:9)/2)+1, rep(1,10)),nrow = 10,ncol=3),
-                    beta = matrix(rnorm(4*3,mean=0,sd=2),ncol=4),
+                    beta,
                     SNR1 = 5,
                     SNR2 = 3){
   
@@ -23,7 +23,7 @@ data_gen = function(n=1000,K = 3,q = 3,p = 10,nx=4,
   
   for (k in (1:K)){
     nk=sum(as.numeric(g==k))
-    betak=beta
+    #betak=beta
     xk = matrix(runif(nx*nk,-1,1),ncol=nx)
     betak=beta[[k]] 
     bkGi = t(betak%*%t(xk))
@@ -37,7 +37,6 @@ data_gen = function(n=1000,K = 3,q = 3,p = 10,nx=4,
   gg=NULL
   for (k in (1:K)){
     nk=sum(as.numeric(g==k))
-    betak=beta
     xk = matrix(runif(nx*nk,-1,1),ncol=nx)
     betak=beta[[k]] 
     bkGi = t(betak%*%t(xk))
