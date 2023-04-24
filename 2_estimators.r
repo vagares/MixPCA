@@ -153,6 +153,7 @@ estimates = function(data,K=3, par_init = NULL, maxits=100,
   diff = 10
   iter=0
   loglik=-Inf
+  llik = c()
   while (diff > tol && iter < maxits){
     old.piik <- piik
     old.mu <- mu
@@ -175,21 +176,22 @@ estimates = function(data,K=3, par_init = NULL, maxits=100,
 						            beta=beta,
                         Q=Q,
                         alphai=alphai,
-                        sigma2i=sigma2i,
+                        sigma2=sigma2,
 						            theta2 = theta2,
 						            K,tau,piik=piik)}
     
     if (verbose) {print(paste("iteration",iter,", LL = ",round(loglik,2)))}
     
+    llik = c(llik,loglik)
     cvce = EM_converged(loglik,loglik_old)$converged				
     iter = iter +1
   }
   G=numeric(N)
   G=apply(tau,1,which.max)
-  return(list(piik=piik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai,tau=tau))
+  return(list(piik=piik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai,tau=tau,llik=llik))
   }
 
-ll_mixPCA = function(y,x,mu=mu,beta=beta,Q=Q,alphai=alphai,sigma2i=sigma2i,theta2=theta2,K=K,tau=tau,piik=piik){
+ll_mixPCA = function(y,x,mu=mu,beta=beta,Q=Q,alphai=alphai,sigma2=sigma2,theta2=theta2,K=K,tau=tau,piik=piik){
   X = cbind(rep(1,nrow(x)),as.matrix(x))
   N = nrow(y)
   p = ncol(y)

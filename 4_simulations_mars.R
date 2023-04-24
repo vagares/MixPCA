@@ -10,7 +10,7 @@ source("1_simdata.r")
 source("2_estimators.r")
 
 
-B   = 1   # nombre de repetitions
+B   = 100   # nombre de repetitions
 q   = 3   # nombre d'axes principaux 
 nx  = 4   # nombre de covariables
 p   = 10
@@ -38,6 +38,8 @@ for (b in (1:B)){
   for (n in nind){
     snr1 = 5
     snr2 = 5
+    set.seed(b*n*snr1*snr2)
+    
     data1=data_gen(n,K,q,p,nx,
                    s = s, 
                    pii = pii,

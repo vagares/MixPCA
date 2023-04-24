@@ -1,0 +1,125 @@
+---
+  title: "Regression non-paramétrique"
+output:
+  html_document:
+  df_print: paged
+---
+
+```{r, include=FALSE}
+library(fda)
+library(tidyfun)
+library(viridis)
+library(tidyverse)
+library(RColorBrewer)
+```
+
+```{r, include=FALSE}
+#parametres modele
+B   = 100   # nombre de repetitions
+q   = 3   # nombre d'axes principaux 
+nx  = 4   # nombre de covariables
+p   = 10
+K   = 3
+pii = c(0.2,0.35,0.45)
+
+mu        = matrix(c((0:(p-1))^2/(2*p),2*cos((0:(p-1))/2)+1, rep(1,p)),nrow = p,ncol=K)
+s         = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2)
+beta      = list()
+beta[[1]] = matrix(c(-1,-1,-1,1),q,nx)
+beta[[2]] = matrix(c(1,1,0,0),q,nx)
+beta[[3]] = matrix(c(-2,0,2,2),q,nx)
+```
+
+
+## Lecture des resultats
+
+```{r}
+res.simu = read.table("simulations0323/analyse/ResultsSummary.txt",header=TRUE)
+```
+
+## Decroissance vraisemblance
+
+```{r}
+sum(res.simu$llik.dec)
+```
+
+On a encore 270 simulations sur 900 pour laquelle la vraisemblance ne fait pas que décroître
+
+```{r}
+table(as.factor(res.simu$llik.dec),as.factor(res.simu$n))
+```
+
+Cela arrive le plus couramment (environ 50% des cas) pour `n=1000` (la valeur la plus utilisée), moins quand `n=10000` 
+Il faudra regarder plus précisément ce qu'il se passe (ordres de grandeur, nombre de fois, etc...)
+
+## estimation taille des groupes
+
+```{r}
+par(mfrow=c(1,3))
+for (k in 1:3){
+  summary(res.simu[,5+k])
+  boxplot(res.simu[,5+k])
+  abline(h=pii[k],lwd=1.5,col=2)
+}
+```
+On observe qu'on retrouve assez bien les tailles de groupes, en tout cas, en moyenne. A regarder en fonction de `n` et des SNR.
+
+## estimation theta2
+
+On calcule le MSE par rapport au theta2 réel
+```{r}
+MSE.theta2 = (res.simu$theta2.hat-res.simu$theta2.sim)/res.simu$theta2.sim
+```
+
+```{r}
+boxplot(MSE.theta2)
+abline(h=0,lwd=1.5,col=2)
+```
+L'erreur relative estimée est grande (presque 250% en moyenne) et toujours positive, on surestime ce paramètre dans nos simulations. Réfléchir au problème de la constante dans le beta, on simule sans constante mais on estime avec.
+
+ - En fonction de `n`
+ 
+```{r}
+boxplot(MSE.theta2~as.factor(res.simu$n))
+```
+Les variabilités pour n=500 et n=10000 semblent contrôlées et on a bien une diminution de la variabilité lorsque n augmente.
+
+```{r}
+aggregate(MSE.theta2,by=list(as.factor(res.simu$n)),mean)
+```
+En moyenne, ce n'est pas très clair
+
+ - En fonction de SNR1
+ 
+```{r}
+boxplot(MSE.theta2~as.factor(res.simu$SNR1))
+```
+L'erreur est nettement plus grande lorsque SNR1 est égal à 3. Il faudrait regarder la tête des données pour cette valeur. Explique sans doute une partie des grandes valeurs obtenues pour n=1000 au dessus.
+
+ - En fonction de SNR2
+ 
+```{r}
+boxplot(MSE.theta2~as.factor(res.simu$SNR2))
+```
+Le résultat est différent pour SNR2, ses valeurs ne semblent pas influer autant sur theta2 (un peu bizarre, theta2 est déterminé à partir de SNR2...). Les points supérieurs pour SNR2=5 proviennent sans doute des valeurs observées pour SNR1=3 au dessus.
+
+## Estimation sigma2
+
+Idem, on calcule l'erreur relative (signée)
+```{r}
+RelMSE.sigma2 = ((res.simu$sigma2.hat-res.simu$sigma2.sim)/res.simu$sigma2.sim)
+MSE.sigma2 = (res.simu$sigma2.hat-res.simu$sigma2.sim)^2
+```
+
+```{r}
+boxplot(RelMSE.sigma2)
+abline(h=0,lwd=1.5,col=2)
+```
+L'erreur relative reste faible sur ce paramètre (en moyenne 4%), on a plutôt tendance à le sous-estimer dans les simulations.
+
+```{r}
+mean(MSE.sigma2)
+sd(MSE.sigma2)
+```
+
+

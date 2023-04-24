@@ -1,6 +1,5 @@
 
 ###########################################################
-
 library(simsalapar)
 library(tibble)
 library(nlme)
@@ -11,30 +10,46 @@ library(tidyr)
 library(tidyverse)
 library(remotes)
 ###########################################################
-#setwd('C:\\Users\\vagares\\Dropbox\\Dropbox\\Analyse robuste modele mixte\\code\\code_VG\\Rik\\Results')
-#load("res.Rdata")
-############################################################
-# use with package simsalar par
-#val <- getArray(res)
 
-#dimnames(val)
+B   = 100   # nombre de repetitions
+q   = 3   # nombre d'axes principaux 
+nx  = 4   # nombre de covariables
+p   = 10
+K   = 3
+pii = c(0.2,0.35,0.45)
 
-# names(dimnames(val))=c("var","cont","n.sim")
-# 
-# 
-# dimnames(val)[[1]]=list("Scopt_beta0","Scopt_beta1","Scopt_sigma0","Scopt_sigma1")                  )
-# df <- array2df(val)
-# df <- df %>% separate(var, c("method","coefs"), sep = "_")
+mu        = matrix(c((0:(p-1))^2/(2*p),2*cos((0:(p-1))/2)+1, rep(1,p)),nrow = p,ncol=K)
+s         = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2)
+beta      = list()
+beta[[1]] = matrix(c(-1,-1,-1,1),q,nx)
+beta[[2]] = matrix(c(1,1,0,0),q,nx)
+beta[[3]] = matrix(c(-2,0,2,2),q,nx)
+
+res.simu = read.table("simulations0323/analyse/ResultsSummary.txt",header=TRUE)
+
+## decroissance vraisemblance
+sum(res.simu$llik.dec)
+table(as.factor(res.simu$llik.dec),as.factor(res.simu$n))
+table(as.factor(res.simu$llik.dec),as.factor(res.simu$SNR1))
+table(as.factor(res.simu$llik.dec),as.factor(res.simu$SNR2))
+
+## estimation piik
+par(mfrow=c(1,3))
+for (k in 1:3){
+  summary(res.simu[,5+k])
+  boxplot(res.simu[,5+k])
+  abline(h=pii[k],lwd=1.5,col=2)
+}
+
+
+## estimation theta2
+MSE.theta2 = (res.simu$theta2.hat-res.simu$theta2.sim)^2
+boxplot(MSE.theta2)
+abline(h=0,lwd=1.5,col=2)
 
 
 
-
-# df$coefsT <- ifelse(df$coefs == "beta0", 1, NA)
-# df$coefsT <- ifelse(df$coefs == "beta1", 1, 1)
-# df$coefsT <- ifelse(df$coefs == "sigma0", 1, 1)
-# df$coefsT <- ifelse(df$coefs == "sigma1", 1, 1)
-
-
+##########################################
 df <- df %>% mutate(biais = value,
                       biais2 = (value)^2,
 )
