@@ -34,7 +34,7 @@ beta[[3]] = matrix(c(-2,0,2,2),q,nx)
 ## Lecture des resultats
 
 ```{r}
-res.simu = read.table("simulations0323/analyse/ResultsSummary.txt",header=TRUE)
+res.simu = read.table("ResultsSummary.txt",header=TRUE)
 ```
 
 ## Decroissance vraisemblance
@@ -68,11 +68,12 @@ On observe qu'on retrouve assez bien les tailles de groupes, en tout cas, en moy
 
 On calcule le MSE par rapport au theta2 réel
 ```{r}
-MSE.theta2 = (res.simu$theta2.hat-res.simu$theta2.sim)/res.simu$theta2.sim
+RelMSE.theta2 = (res.simu$theta2.hat-res.simu$theta2.sim)/res.simu$theta2.sim
+MSE.theta2 = (res.simu$theta2.hat-res.simu$theta2.sim)^2
 ```
 
 ```{r}
-boxplot(MSE.theta2)
+boxplot(RelMSE.theta2)
 abline(h=0,lwd=1.5,col=2)
 ```
 L'erreur relative estimée est grande (presque 250% en moyenne) et toujours positive, on surestime ce paramètre dans nos simulations. Réfléchir au problème de la constante dans le beta, on simule sans constante mais on estime avec.
@@ -80,28 +81,35 @@ L'erreur relative estimée est grande (presque 250% en moyenne) et toujours posi
  - En fonction de `n`
  
 ```{r}
-boxplot(MSE.theta2~as.factor(res.simu$n))
+boxplot(RelMSE.theta2~as.factor(res.simu$n))
 ```
 Les variabilités pour n=500 et n=10000 semblent contrôlées et on a bien une diminution de la variabilité lorsque n augmente.
 
 ```{r}
-aggregate(MSE.theta2,by=list(as.factor(res.simu$n)),mean)
+aggregate(RelMSE.theta2,by=list(as.factor(res.simu$n)),mean)
 ```
-En moyenne, ce n'est pas très clair
+En moyenne, ce n'est pas très clair : l'erreur relative semble augmenter avec n...
 
  - En fonction de SNR1
  
 ```{r}
-boxplot(MSE.theta2~as.factor(res.simu$SNR1))
+boxplot(RelMSE.theta2~as.factor(res.simu$SNR1))
 ```
-L'erreur est nettement plus grande lorsque SNR1 est égal à 3. Il faudrait regarder la tête des données pour cette valeur. Explique sans doute une partie des grandes valeurs obtenues pour n=1000 au dessus.
+Le comportement est cohérent
 
  - En fonction de SNR2
  
 ```{r}
-boxplot(MSE.theta2~as.factor(res.simu$SNR2))
+boxplot(RelMSE.theta2~as.factor(res.simu$SNR2))
 ```
-Le résultat est différent pour SNR2, ses valeurs ne semblent pas influer autant sur theta2 (un peu bizarre, theta2 est déterminé à partir de SNR2...). Les points supérieurs pour SNR2=5 proviennent sans doute des valeurs observées pour SNR1=3 au dessus.
+Le résultat est différent pour SNR2, ses valeurs ne semblent pas influer autant sur theta2 (un peu bizarre, theta2 est déterminé à partir de SNR2...). Les points supérieurs pour SNR2=5 proviennent du fait qu'on a plus de configuration dans ce cas (schema de simulation desequilibré)
+
+```{r}
+mean(MSE.theta2)
+sd(MSE.theta2)
+```
+
+Indicateurs pour les MSE absolus, plus difficile à interpréter. 
 
 ## Estimation sigma2
 
@@ -122,4 +130,179 @@ mean(MSE.sigma2)
 sd(MSE.sigma2)
 ```
 
+ - En fonction de `n`
 
+```{r}
+boxplot(RelMSE.sigma2~as.factor(res.simu$n))
+```
+La variabilité diminue avec n et l'erreur aussi (erreur relative négative), semble cohérent
+
+ - En fonction de SNR1
+ 
+```{r}
+boxplot(RelMSE.sigma2~as.factor(res.simu$SNR1))
+```
+Moins clair pour le SNR1, l'erreur augmente légérement (peu significatif)
+
+ - En fonction de SNR2
+ 
+```{r}
+boxplot(RelMSE.sigma2~as.factor(res.simu$SNR2))
+``` 
+Pas d'effet concluant ce qui est moins surprenant car sigma2 est déterminé à partir de SNR1
+
+## Estimation Q, beta et leur produit (identifiabilité)
+
+Q et beta sont des matrices, l'indicateur calculé ici, en première intention, est un indicateur global moyenné sur toutes les composantes. 
+
+ - Globalement
+
+Pour les matrices Qk par groupe
+```{r}
+boxplot(res.simu[,16:18])
+```  
+Pour les matrices betak par groupe
+```{r}
+boxplot(res.simu[,19:21])
+```  
+Il semble y avoir des effets de groupe identiques pour Q et beta : étudier d'où ça peut venir
+
+Pour le produit par groupe
+```{r}
+boxplot(res.simu[,22:24],ylim=c(0,0.008))
+```  
+Au delà de quelques outliers (3 ou 4 points, non représentés ici), le produit est globalement très bien estimé.
+
+ - En fonction de n
+
+Pour les matrices Qk par groupe
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,16]~as.factor(res.simu$n),main="Groupe 1")
+boxplot(res.simu[,17]~as.factor(res.simu$n),main="Groupe 2")
+boxplot(res.simu[,18]~as.factor(res.simu$n),main="Groupe 3")
+```  
+
+Pour les matrices betak par groupe
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,19]~as.factor(res.simu$n),main="Groupe 1")
+boxplot(res.simu[,20]~as.factor(res.simu$n),main="Groupe 2")
+boxplot(res.simu[,21]~as.factor(res.simu$n),main="Groupe 3")
+```    
+
+Pour le produit par groupe
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,22]~as.factor(res.simu$n),main="Groupe 1")
+boxplot(res.simu[,23]~as.factor(res.simu$n),main="Groupe 2")
+boxplot(res.simu[,24]~as.factor(res.simu$n),main="Groupe 3")
+```  
+
+ - En fonction de SNR1
+
+Pour les matrices Qk par groupe
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,16]~as.factor(res.simu$SNR1),main="Groupe 1")
+boxplot(res.simu[,17]~as.factor(res.simu$SNR1),main="Groupe 2")
+boxplot(res.simu[,18]~as.factor(res.simu$SNR1),main="Groupe 3")
+```  
+
+Pour les matrices betak par groupe
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,19]~as.factor(res.simu$SNR1),main="Groupe 1")
+boxplot(res.simu[,20]~as.factor(res.simu$SNR1),main="Groupe 2")
+boxplot(res.simu[,21]~as.factor(res.simu$SNR1),main="Groupe 3")
+```    
+
+Pour le produit par groupe
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,22]~as.factor(res.simu$SNR1),main="Groupe 1")
+boxplot(res.simu[,23]~as.factor(res.simu$SNR1),main="Groupe 2")
+boxplot(res.simu[,24]~as.factor(res.simu$SNR1),main="Groupe 3")
+```  
+
+
+ - En fonction de SNR2
+
+Pour les matrices Qk par groupe
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,16]~as.factor(res.simu$SNR2),main="Groupe 1")
+boxplot(res.simu[,17]~as.factor(res.simu$SNR2),main="Groupe 2")
+boxplot(res.simu[,18]~as.factor(res.simu$SNR2),main="Groupe 3")
+```  
+
+Pour les matrices betak par groupe
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,19]~as.factor(res.simu$SNR2),main="Groupe 1")
+boxplot(res.simu[,20]~as.factor(res.simu$SNR2),main="Groupe 2")
+boxplot(res.simu[,21]~as.factor(res.simu$SNR2),main="Groupe 3")
+```    
+
+Pour le produit par groupe
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,22]~as.factor(res.simu$SNR2),main="Groupe 1")
+boxplot(res.simu[,23]~as.factor(res.simu$SNR2),main="Groupe 2")
+boxplot(res.simu[,24]~as.factor(res.simu$SNR2),main="Groupe 3")
+```  
+
+## Estimation moyennes mu
+
+Similairement, on calcule un indicateur MSE global dans un premier temps 
+
+ - Globalement
+ 
+```{r}
+boxplot(res.simu[,13:15])
+```  
+Encore une fois, le troisième groupe semble être plus difficile à estimer
+
+ - En fonction de n
+
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,13]~as.factor(res.simu$n),main="Groupe 1")
+boxplot(res.simu[,14]~as.factor(res.simu$n),main="Groupe 2")
+boxplot(res.simu[,15]~as.factor(res.simu$n),main="Groupe 3")
+``` 
+
+
+ - En fonction de SNR1
+
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,13]~as.factor(res.simu$SNR1),main="Groupe 1")
+boxplot(res.simu[,14]~as.factor(res.simu$SNR1),main="Groupe 2")
+boxplot(res.simu[,15]~as.factor(res.simu$SNR1),main="Groupe 3")
+``` 
+
+
+ - En fonction de SNR2
+
+```{r}
+par(mfrow=c(1,3))
+par(mar=c(2,2,4,2))
+boxplot(res.simu[,13]~as.factor(res.simu$SNR2),main="Groupe 1")
+boxplot(res.simu[,14]~as.factor(res.simu$SNR2),main="Groupe 2")
+boxplot(res.simu[,15]~as.factor(res.simu$SNR2),main="Groupe 3")
+```  
+
+Le groupe 3 se détache clairement (négativement) dans les MSE. C'est assez flagrant sur la moyenne. 
+Pour mémoire, le groupe 3 correspond à une courbe constante, c'est sans doute "plus difficile" à retrouver.
