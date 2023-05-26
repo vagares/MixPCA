@@ -9,8 +9,10 @@ Estep = function(n,K = 3,q = 4,p = 10,nx=4,
                  sigma2=1,
                  x=x,y=y,
                  Q=Q,
-                 C=C){
-    X = cbind(rep(1,nrow(x)),as.matrix(x))
+                 C=C,cste=cste){
+  if (cste){X = cbind(rep(1,nrow(x)),as.matrix(x))
+  }else{ X = as.matrix(x)}
+  
  # X = matrix(1,dim(x)[1],nx+1)
   #X[,2:(nx+1)] = x
     alphai =list()
@@ -48,8 +50,10 @@ Estep = function(n,K = 3,q = 4,p = 10,nx=4,
 }
 
 Mstep = function(n=c(100,100,100),K = 3,q = 4,p = 10,nx=4,
-                 x,y,z,C,old.mu,alphai,alphai2,alphai22, alphai2Q,tau){
-  X = cbind(rep(1,nrow(x)),as.matrix(x))
+                 x,y,z,C,old.mu,alphai,alphai2,alphai22, alphai2Q,tau,cste=cste){
+
+  if (cste){X = cbind(rep(1,nrow(x)),as.matrix(x))
+  }else{ X = as.matrix(x)}
   y=as.matrix(y)
   piik = apply(tau,2,mean)
   mu = list()
@@ -103,6 +107,7 @@ estimates = function(data,K=3, par_init = NULL, maxits=100,
                      q = 4,
                      p=10,
                      nx=4,
+                     cste = TRUE,
                      verbose=TRUE){
   N = dim(data)[1]
   y = as.matrix(data[,1:p],N,p)
@@ -136,7 +141,10 @@ estimates = function(data,K=3, par_init = NULL, maxits=100,
       sigma2_t[k] = mean(apply(Z-t(Q[[k]]%*%t(alphaik.init)),2,var))
       # regression des x sur les alphaik pour trouver betak (coefficients) et theta2 (residus)
       xk = as.matrix(x[which(C==k),])
-      lm_xk = lm(alphaik.init ~ xk)
+      if (cste){  lm_xk = lm(alphaik.init ~ xk)
+      }else{
+        lm_xk = lm(alphaik.init ~ xk-1)
+      }
       beta[[k]] = t(lm_xk$coefficients)
       theta2_t[k] = mean(sapply(1:ncol(alphaik.init),FUN=function(i){tmp=summary(lm_xk)[[i]];return(tmp$sigma)}))
   }
@@ -161,10 +169,10 @@ estimates = function(data,K=3, par_init = NULL, maxits=100,
     old.beta <- beta
     old.theta2 <- theta2
     old.sigma2 <- sigma2
-    Estepresults = Estep(n,K,q,p,nx,piik,mu,beta,theta2,sigma2,x,y,Q,C)
+    Estepresults = Estep(n,K,q,p,nx,piik,mu,beta,theta2,sigma2,x,y,Q,C,cste)
     alphai=Estepresults$alphai;alphai2=Estepresults$alphai2;alphai22=Estepresults$alphai22;alphai2Q=Estepresults$alphai2Q;tau=Estepresults$tau
     
-    Mstepresults = Mstep(n,K,q,p,nx,x,y,z,C,old.mu,alphai,alphai2,alphai22,alphai2Q,tau)
+    Mstepresults = Mstep(n,K,q,p,nx,x,y,z,C,old.mu,alphai,alphai2,alphai22,alphai2Q,tau,cste)
     piik=Mstepresults$piik;beta=Mstepresults$beta;mu=Mstepresults$mu;Q=Mstepresults$Q;theta2=Mstepresults$theta2;sigma2=Mstepresults$sigma2;sigma2i=Mstepresults$sigma2i
     diff1=numeric(K)
     for (k in (1:K)){diff1[k] = sum((piik[k]-old.piik[k])^2)+sum((mu[[k]] - old.mu[[k]])^2)+sum((Q[[k]] - old.Q[[k]])^2) + sum((beta[[k]] - old.beta[[k]])^2)}
@@ -178,7 +186,7 @@ estimates = function(data,K=3, par_init = NULL, maxits=100,
                         alphai=alphai,
                         sigma2=sigma2,
 						            theta2 = theta2,
-						            K,tau,piik=piik)}
+						            K,tau,piik=piik,cste=cste)}
     
     if (verbose) {print(paste("iteration",iter,", LL = ",round(loglik,2)))}
     
@@ -191,8 +199,10 @@ estimates = function(data,K=3, par_init = NULL, maxits=100,
   return(list(piik=piik,mu=mu,beta=beta,Q=Q,theta2=theta2,sigma2i=sigma2i,G=G,alphai=alphai,tau=tau,llik=llik))
   }
 
-ll_mixPCA = function(y,x,mu=mu,beta=beta,Q=Q,alphai=alphai,sigma2=sigma2,theta2=theta2,K=K,tau=tau,piik=piik){
-  X = cbind(rep(1,nrow(x)),as.matrix(x))
+ll_mixPCA = function(y,x,mu=mu,beta=beta,Q=Q,alphai=alphai,sigma2=sigma2,theta2=theta2,K=K,tau=tau,piik=piik,cste = cste){
+  if (cste){X = cbind(rep(1,nrow(x)),as.matrix(x))
+  }else{ X = as.matrix(x)}
+  
   N = nrow(y)
   p = ncol(y)
   tmp=numeric(K)
