@@ -63,18 +63,19 @@ dim(Ycoef) # 14 coefficients pour n individus
 data = cbind(Ycoef,Xgeom)
 K=3;maxits=100;tol=1e-4; q = 3;p=14;nx=3
 
-est0 = estimates(cbind(Ycoef,Xgeom),K=3,par_init=NULL,maxits=100,
+est0 = estimates(cbind(Ycoef,Xgeom),K=3,par_init=NULL,maxits=300,
                  tol=1e-4, 
                  q = 3,
                  p=14,
                  nx=3,
+                 cste = TRUE,
                  verbose=TRUE)
 
-save(est0,file="geometriePiece/resultsGeom-31032023.Rdata")
-load("geometriePiece/resultsGeom-31032023.Rdata")
+save(est0,file="geometriePiece/resultsGeom-31052023.Rdata")
+load("geometriePiece/resultsGeom-31052023.Rdata")
 
 est0$piik  # taille des groupes
-est0$theta2 # on obtient une valeur bizarre (très grande)
+est0$theta2 
 est0$sigma2i
 
 apply(est0$tau,1,max) # les probas d'appartenance sont plutot tranchées, 17 indiv sur 498 avec proba max <0.95
@@ -114,6 +115,7 @@ Qfct = lapply(est0$Q,FUN=function(x) {ft =fd(x,splbasis) ; return(eval.fd(Gap,ft
 par(mfrow=c(1,3))
 for (i in 1:K){
   matplot(Gap,Qfct[[i]],type="l",col=2:5)
+  abline(h=0,lwd=0.5,lty=3)
 }
 ### dans Q[[i]], est ce qu'on a les 3 composantes du groupe i ou la composante i pour les 3 groupes (on pourrait croire qu'on a la deuxieme) 
 
