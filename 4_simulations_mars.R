@@ -17,7 +17,7 @@ p   = 10
 K   = 3
 pii = c(0.2,0.35,0.45)
 
-mu        = matrix(c((0:(p-1))^2/(2*p),2*cos((0:(p-1))/2)+1, rep(1,p)),nrow = p,ncol=K)
+mu        = matrix(c((0:(p-1))^2/(2*p),2*cos((0:(p-1))/2)+1, (1+exp(-(0:(p-1))))),nrow = p,ncol=K)
 s         = matrix(c(0.7,-0.4,0.7,0.4,0.8,0.2),ncol=3,nrow=2)
 beta      = list()
 beta[[1]] = matrix(c(-1,-1,-1,1),q,nx)
