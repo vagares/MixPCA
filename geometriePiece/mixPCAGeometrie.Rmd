@@ -1,0 +1,528 @@
+---
+title: "Mix PCA - Données Géométrie"
+author: "Madison Giacofci"
+date: "2023-2024"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r, setup, include=FALSE}
+## packages
+library(readxl)
+library(fda)
+library(viridis)
+library(FactoMineR)
+library(knitr)
+library(CCA)
+
+
+knitr::opts_knit$set(root.dir = "~/GitHub/MixPCA")  ### CHEMIN A MODIFIER
+opts_chunk$set(error=TRUE,comment=NA)
+source("~/GitHub/MixPCA/2_estimators.r")  ### CHEMIN A MODIFIER
+```
+
+
+## Chargement des données et preprocessing
+
+ * Chargement des données
+ 
+```{r}
+geom = readxl::read_xlsx("geometriePiece/ResultsAddedForExcel.xlsx",col_names=TRUE,skip=1)
+colnames(geom)[1] = "type"
+geom$type = as.factor(geom$type)
+```
+
+
+* On se concentre sur un cahoutchouc (le premier P225M909)
+```{r}
+geom = split(geom,geom$type)$P225M909
+Xgeom = geom[,2:4]
+Y = geom[,5:ncol(geom)]
+Gap = seq(30,7,by=-0.5)
+matplot(Gap,t(Y),type="l",col = "steelblue",lwd=0.25,lty=1,xlab="Gap (mm)",ylab="Efforts (N)")
+```
+
+ * on remplace les donnees manquantes par un plateau (correspond à des divergences du modele)
+ 
+```{r}
+NAcurve = sort(unique(which(is.na(Y),arr.ind = TRUE)[,1]))
+for (i in NAcurve){Y[i,which(is.na(Y[i,]))] = Y[i,min(which(is.na(Y[i,])))-1]}
+# summary(Y) # OK, plus de donnees manquantes
+```
+
+
+ * projection dans une base de splines pour obtenir des coefficients splines (smoothing penalise) sur une base de splines de taille 14 (reduction dimension)
+
+```{r}
+splbasis = create.bspline.basis(rangeval=range(Gap),norder=4,breaks=seq(min(Gap),max(Gap),length=12))
+gcv = 1:21
+for (i in 1:21){
+  lambda = exp(i-10)
+  fdparTemp = fdPar(splbasis,Lfdobj = 2,lambda=lambda)
+  smoothdata = smooth.basis(argvals=Gap,t(Y),fdParobj = fdparTemp)
+  gcv[i] = mean(smoothdata$gcv)
+}
+
+lambda = exp(which.min(gcv)-10)
+fdparTemp = fdPar(splbasis,Lfdobj = 2,lambda=lambda)
+smoothdata = smooth.basis(argvals=Gap,t(Y),fdParobj = fdparTemp)
+# plotfit.fd(t(Y),Gap,smoothdata$fd,pch=20,cex=0.5) #on est tres proche de l'interpolation
+
+Ycoef = t(smoothdata$fd$coefs)
+dim(Ycoef) # 14 coefficients pour n individus
+```
+
+## Estimation avec MixPCA
+
+ * On estime avec notre modèle mixPCA (ne pas faire tourner)
+ 
+```{r}
+#data = cbind(Ycoef,Xgeom)
+#K=3;maxits=100;tol=1e-4; q = 3;p=14;nx=3
+
+#est0 = estimates(cbind(Ycoef,Xgeom),K=3,par_init=NULL,maxits=300,
+#                 tol=1e-4, 
+#                 q = 3,
+#                 p=14,
+#                 nx=3,
+#                 cste = TRUE,
+#                 verbose=TRUE)
+
+#save(est0,file="geometriePiece/resultsGeom-31052023.Rdata")
+```
+ 
+ * chargement des résultats (31/05/2023)
+ 
+```{r}
+load("geometriePiece/resultsGeom-31052023.Rdata")
+```
+ 
+Les résultats sont contenus dans l'objet `est0` 
+ 
+ * Représentation des courbes par groupes
+ 
+```{r}
+couleur = c("coral1","palegreen3","steelblue")
+matplot(Gap,t(Y),type="l",col=couleur[est0$G],lwd=0.4,lty=1,xlab="Gap (mm)",ylab="Efforts (N)")
+```
+```{r}
+par(mfrow=c(1,3))
+for (i in 1:length(est0$piik)){
+matplot(Gap,t(Y[which(est0$G==i),]),type="l",col=couleur[i],ylim=c(0,42),lwd=0.4,lty=1,xlab="Gap (mm)",ylab="Efforts (N)")
+}
+```
+
+ 
+## Canonical correlation analysis
+
+On sélectionne d'abord les individus (courbes) d'un groupe particulier (tel que trouvé par MixPCA). On se concentre ici sur le groupe 1
+
+```{r}
+grpe = 1 # a fixer suivant le groupe sur lequel on se concentre
+index.gpe = which(est0$G==grpe) 
+print(paste("Le groupe ", grpe," contient ", length(index.gpe), " individus"))
+```
+
+
+```{r}
+matplot(Gap,t(Y)[,index.gpe],type="l",col="steelblue",lty=1,lwd=0.4,xlab="Gap (mm)",ylab="Efforts (N)")
+#reconstruction des courbes moyennes fonctionnelles 
+splbasis = create.bspline.basis(rangeval=range(Gap),norder=4,breaks=seq(min(Gap),max(Gap),length=12))
+mufct = sapply(est0$mu,FUN=function(x) {ft =fd(x,splbasis) ; return(eval.fd(Gap,ft))})
+#ajout moyenne groupe 2
+lines(Gap,mufct[,grpe],col="red",lwd=1)
+```
+
+On prend les courbes du groupe choisi, que l'on projette sur notre base de splines, ainsi que les géométries associées. On standardise les deux matrices (est-ce qu'il faut centrer uniquement?)
+
+```{r}
+YcoefG = scale(Ycoef[index.gpe,])
+XgeomG = scale(Xgeom[index.gpe,])
+```
+
+Les données de geometrie contiennent, dans l'ordre :
+* Thickness
+* Height
+* Shape
+
+
+### Analyse des correlations sur les deux groupes de données puis globalement
+
+
+```{r}
+crosscor = matcor(YcoefG,XgeomG)
+img.matcor(crosscor,type=2)
+```
+
+### Analyse des correlations canoniques - groupe 1
+
+On se place dans un modèle du type
+
+$$ Y = \mu_{Y} + Q_{Y} \alpha + \varepsilon $$
+
+et 
+
+$$ X = \mu_{X} + Q_{X} \alpha + \eta $$
+
+
+```{r}
+cc1 <- cc(XgeomG,YcoefG)
+barplot(cc1$cor, xlab = "Dimension", ylab = "Canonical correlations", ylim = c(0,1))
+cc1$cor
+```
+
+Les 3 corrélations canoniques sont plutot proches de 1
+
+```{r}
+# Affichage des corrélations canoniques
+cor(cc1$scores$xscores,cc1$scores$yscores)
+dim(cc1$scores$xscores)
+```
+
+Les scores selon X et selon Y (notés $\alpha$) sont très fortement corrélés et indépendant  
+
+
+La matrice $Q_{X}$ est donnée par
+```{r}
+cc1$xcoef
+t(cc1$xcoef)%*%cc1$xcoef
+cc1$xcoef%*%t(cc1$xcoef)
+xcoef1 = cc1$xcoef
+```
+
+Cette matrice nous renseigne sur la contribution des variables de géométrie à chaque axe factoriel.
+
+La matrice $Q_{Y}$ est donnée par 
+
+```{r}
+Qy = cc1$ycoef
+Qy
+#t(cc1$ycoef)%*%cc1$ycoef
+#V = t(cc1$scores$yscores)%*%YcoefG
+#cor(t(V))
+Wy =pseudoinverse(cc1$ycoef)
+```
+
+Elle correspond à nos composantes principales fonctionnelles. En "revenant" dans le domaine fonctionnel, on peut voir si celles-ci sont interprétables en tant que telles.
+
+ * Représentation des composantes seules
+```{r}
+Qfct = apply(t(Wy),2,FUN=function(x) {ft =fd(x,splbasis) ; return(eval.fd(Gap,ft))})
+Qfct1 = Qfct
+matplot(Gap,Qfct,col=c("coral1","palegreen3","steelblue"),type="l")
+```
+
+ * Représentation comme deviation autour de la moyenne fonctionnelle (voir Ramsay et Silvermann) : 
+
+On représente (à vocation d'interprétation graphique)
+
+$$ \mu_Y(t) \pm \alpha \hat{\psi}_j (t), \qquad j=1,\ldots,q$$
+où $\alpha$ peut être choisi plus ou moins "arbitrairement" (normalement, on utilise la valeur propre associée pour moduler le coeff mais ici, ce n'est pas clair pour moi)
+
+```{r}
+for(i in 1:3){
+  matplot(Gap,t(Y)[,index.gpe],type="l",col="gray",ylab="Efforts",ylim=c(0,42),lwd=0.5)
+  lines(Gap,mufct[,grpe],col=1)
+  lines(Gap,mufct[,grpe]+3*Qfct[,i],type="p",pch="+",col=couleur[i])
+  lines(Gap,mufct[,grpe]-3*Qfct[,i],type="p",pch="-",col=couleur[i],lwd=2)
+}
+```
+
+Il n'est pas évident de voir sur cette représentation si les composantes principales contenues dans $Q_Y$ ont un sens fonctionnel.  
+
+ * Avec la stratégie varimax
+
+```{r}
+Qvarimax = varimax(Qfct)
+par(mfrow=c(1,2))
+matplot(Gap,Qfct,col=c("coral1","palegreen3","steelblue"),type="l",main="sans VARIMAX")
+matplot(Gap,Qvarimax$loadings,col=c("coral1","palegreen3","steelblue"),type="l",main="avec VARIMAX")
+```
+ 
+```{r}
+for(i in 1:3){
+  matplot(Gap,t(Y)[,index.gpe],type="l",col="gray",ylab="Efforts",ylim=c(0,42),lwd=0.5)
+  lines(Gap,mufct[,grpe],col=1)
+  lines(Gap,mufct[,grpe]+3*Qvarimax$loadings[,i],type="p",pch="+",col=couleur[i])
+  lines(Gap,mufct[,grpe]-3*Qvarimax$loadings[,i],type="p",pch="-",col=couleur[i],lwd=2)
+}
+```
+
+La différence n'est pas complètement claire...
+
+Par ailleurs, on est limité à 3 composantes principales étant donné qu'on a 3 covariables de géométrie. Philosophiquement, ce n'est sans doute pas étonnant puisqu'on a au final des courbes qui n'ont que 3 degrés de liberté.
+
+
+### Analyse des correlations canoniques - groupe 2
+
+On sélectionne d'abord les individus (courbes) d'un groupe particulier (tel que trouvé par MixPCA). On se concentre ici sur le groupe 2
+
+```{r}
+grpe = 2 # a fixer suivant le groupe sur lequel on se concentre
+index.gpe = which(est0$G==grpe) 
+print(paste("Le groupe ", grpe," contient ", length(index.gpe), " individus"))
+```
+
+
+```{r}
+matplot(Gap,t(Y)[,index.gpe],type="l",col="steelblue",lty=1,lwd=0.4,xlab="Gap (mm)",ylab="Efforts (N)")
+#reconstruction des courbes moyennes fonctionnelles 
+splbasis = create.bspline.basis(rangeval=range(Gap),norder=4,breaks=seq(min(Gap),max(Gap),length=12))
+mufct = sapply(est0$mu,FUN=function(x) {ft =fd(x,splbasis) ; return(eval.fd(Gap,ft))})
+#ajout moyenne groupe 2
+lines(Gap,mufct[,grpe],col="red",lwd=1)
+```
+
+On prend les courbes du groupe choisi, que l'on projette sur notre base de splines, ainsi que les géométries associées. On standardise les deux matrices (est-ce qu'il faut centrer uniquement?)
+
+```{r}
+YcoefG = scale(Ycoef[index.gpe,])
+XgeomG = scale(Xgeom[index.gpe,])
+```
+
+Les données de geometrie contiennent, dans l'ordre :
+* Thickness
+* Height
+* Shape
+
+
+### Analyse des correlations sur les deux groupes de données puis globalement
+
+
+```{r}
+crosscor = matcor(YcoefG[,1:9],XgeomG)
+img.matcor(crosscor,type=2)
+```
+
+### Analyse des correlations canoniques
+
+On se place dans un modèle du type
+
+$$ Y = \mu_{Y} + Q_{Y} \alpha + \varepsilon $$
+
+et 
+
+$$ X = \mu_{X} + Q_{X} \alpha + \eta $$
+
+
+```{r}
+cc1 <- cc(XgeomG,YcoefG[,1:9]) # on enlève les 5 derniers coefs (singulrite matrice)
+barplot(cc1$cor, xlab = "Dimension", ylab = "Canonical correlations", ylim = c(0,1))
+cc1$cor
+```
+
+Les 3 corrélations canoniques sont moins proches de 1 ici (interpretation à reflechir)
+
+```{r}
+# Affichage des corrélations canoniques
+cor(cc1$scores$xscores,cc1$scores$yscores)
+dim(cc1$scores$xscores)
+```
+
+Les scores selon X et selon Y (notés $\alpha$) sont très fortement corrélés et indépendant  
+
+
+La matrice $Q_{X}$ est donnée par
+```{r}
+cc1$xcoef
+#t(cc1$xcoef)%*%cc1$xcoef # orthogonalite?
+#cc1$xcoef%*%t(cc1$xcoef) # orthogonalite?
+xcoef2 = cc1$xcoef
+```
+
+Cette matrice nous renseigne sur la contribution des variables de géométrie à chaque axe factoriel. Elle semble a priori assez différente de celle du groupe 1 meme si on retrouve un deuxième "axe" lié à la hauteur et un troisième "axe" lié à shape.
+Note : elle n'est toujours pas orthogonale
+
+La matrice $Q_{Y}$ est donnée par 
+
+```{r}
+Qy = cc1$ycoef
+Qy
+#t(cc1$ycoef)%*%cc1$ycoef
+#V = t(cc1$scores$yscores)%*%YcoefG
+#cor(t(V))
+Wy =pseudoinverse(cc1$ycoef)
+```
+
+Elle correspond à nos composantes principales fonctionnelles. En "revenant" dans le domaine fonctionnel, on peut voir si celles-ci sont interprétables en tant que telles.
+
+ * Représentation des composantes seules
+```{r}
+Ycoeffin = matrix(apply(YcoefG,2,mean)[10:14],nrow=5,ncol=3) # on reprend la moyenne des coefs pour la fin des courbes (grands gaps)
+Qfct = apply(rbind(t(Wy),Ycoeffin),2,FUN=function(x) {ft =fd(x,splbasis) ; return(eval.fd(Gap,ft))})
+Qfct2 = Qfct
+matplot(Gap,Qfct,col=c("coral1","palegreen3","steelblue"),type="l")
+```
+
+ * Représentation comme deviation autour de la moyenne fonctionnelle (voir Ramsay et Silvermann) : 
+
+On représente (à vocation d'interprétation graphique)
+
+$$ \mu_Y(t) \pm \alpha \hat{\psi}_j (t), \qquad j=1,\ldots,q$$
+où $\alpha$ peut être choisi plus ou moins "arbitrairement" (normalement, on utilise la valeur propre associée pour moduler le coeff mais ici, ce n'est pas clair pour moi)
+
+```{r}
+for(i in 1:3){
+  matplot(Gap,t(Y)[,index.gpe],type="l",col="gray",ylab="Efforts",ylim=c(0,42),lwd=0.5)
+  lines(Gap,mufct[,grpe],col=1)
+  lines(Gap,mufct[,grpe]+3*Qfct[,i],type="p",pch="+",col=couleur[i])
+  lines(Gap,mufct[,grpe]-3*Qfct[,i],type="p",pch="-",col=couleur[i],lwd=2)
+}
+```
+
+On peut interpréter les courbes en regard de la matrice `xcoef`. Ces courbes nous renseigne sur les parties impactées par la géométrie en fonction de l'axe factoriel considéré. Par exemple, le deuxième axe de `xcoef` est positivement lié à `Height` mais négativement à `Thickness`. La reconstruction fonctionnelle du deuxième axe `ycoef` est cohérente avec cela car on observe que les fortes valeurs positives (grande hauteur/faible épaisseur) montre une croissance de la courbe plus précoce que pour les fortes valeurs négatives (petites hauteurs/forte épaisseur)
+
+
+
+### Analyse des correlations canoniques - groupe 3
+
+On sélectionne d'abord les individus (courbes) d'un groupe particulier (tel que trouvé par MixPCA). On se concentre ici sur le groupe 3
+
+```{r}
+grpe = 3 # a fixer suivant le groupe sur lequel on se concentre
+index.gpe = which(est0$G==grpe) 
+print(paste("Le groupe ", grpe," contient ", length(index.gpe), " individus"))
+```
+
+
+```{r}
+matplot(Gap,t(Y)[,index.gpe],type="l",col="steelblue",lty=1,lwd=0.4,xlab="Gap (mm)",ylab="Efforts (N)")
+#reconstruction des courbes moyennes fonctionnelles 
+splbasis = create.bspline.basis(rangeval=range(Gap),norder=4,breaks=seq(min(Gap),max(Gap),length=12))
+mufct = sapply(est0$mu,FUN=function(x) {ft =fd(x,splbasis) ; return(eval.fd(Gap,ft))})
+#ajout moyenne groupe 2
+lines(Gap,mufct[,grpe],col="red",lwd=1)
+```
+
+On prend les courbes du groupe choisi, que l'on projette sur notre base de splines, ainsi que les géométries associées. On voit ici que le groupe 3 n'est pas très homogène, il contient des courbes avec des comportements très différents. De même que pour les deux autres groupes, on standardise les deux matrices (est-ce qu'il faut centrer uniquement?)
+
+```{r}
+YcoefG = scale(Ycoef[index.gpe,])
+XgeomG = scale(Xgeom[index.gpe,])
+```
+
+Les données de geometrie contiennent, dans l'ordre :
+* Thickness
+* Height
+* Shape
+
+
+### Analyse des correlations sur les deux groupes de données puis globalement
+
+
+```{r}
+crosscor = matcor(YcoefG,XgeomG)
+img.matcor(crosscor,type=2)
+```
+
+Les corrélations croisées présentent un comportement relativement différents dans ce groupe (en 3 blocs au lieu de 2), faisant echo à l'hétérogénéité des courbes dans le groupe.
+
+### Analyse des correlations canoniques
+
+On se place dans un modèle du type
+
+$$ Y = \mu_{Y} + Q_{Y} \alpha + \varepsilon $$
+
+et 
+
+$$ X = \mu_{X} + Q_{X} \alpha + \eta $$
+
+
+```{r}
+cc1 <- cc(XgeomG,YcoefG) 
+barplot(cc1$cor, xlab = "Dimension", ylab = "Canonical correlations", ylim = c(0,1))
+cc1$cor
+```
+
+Pas de souci de singularité dans ce groupe. La 3eme corrélation canonique est relativement faible ici (interpretation à reflechir)
+
+```{r}
+# Affichage des corrélations canoniques
+cor(cc1$scores$xscores,cc1$scores$yscores)
+#dim(cc1$scores$xscores)
+```
+
+Les scores selon X et selon Y (notés $\alpha$) sont très fortement corrélés et indépendant (sauf la 3eme) 
+
+
+La matrice $Q_{X}$ est donnée par
+```{r}
+cc1$xcoef
+#t(cc1$xcoef)%*%cc1$xcoef # orthogonalite?
+#cc1$xcoef%*%t(cc1$xcoef) # orthogonalite?
+xcoef3 = cc1$xcoef
+```
+
+Cette matrice nous renseigne sur la contribution des variables de géométrie à chaque axe factoriel. On retrouve une matrice légèrement différente des autres groupes même si l'axe 2 est toujours lié positivement à la hauteur, l'axe 1 est lié à l'épaisseur positivement et négativement à la hauteur. L'axe 3 reste lié à shape.
+
+La matrice $Q_{Y}$ est donnée par 
+
+```{r}
+Qy = cc1$ycoef
+Qy
+#t(cc1$ycoef)%*%cc1$ycoef
+#V = t(cc1$scores$yscores)%*%YcoefG
+#cor(t(V))
+## Et sa pseudo-inverse
+Wy =pseudoinverse(cc1$ycoef)
+Wy
+```
+
+Elle correspond à nos composantes principales fonctionnelles. En "revenant" dans le domaine fonctionnel, on peut voir si celles-ci sont interprétables en tant que telles.
+
+ * Représentation des composantes seules
+```{r}
+Qfct = apply(t(Wy),2,FUN=function(x) {ft =fd(x,splbasis) ; return(eval.fd(Gap,ft))})
+Qfct3 = Qfct
+matplot(Gap,Qfct,col=c("coral1","palegreen3","steelblue"),type="l")
+```
+
+ * Représentation comme deviation autour de la moyenne fonctionnelle (voir Ramsay et Silvermann) : 
+
+On représente (à vocation d'interprétation graphique)
+
+$$ \mu_Y(t) \pm \alpha \hat{\psi}_j (t), \qquad j=1,\ldots,q$$
+où $\alpha$ peut être choisi plus ou moins "arbitrairement" (normalement, on utilise la valeur propre associée pour moduler le coeff mais ici, ce n'est pas clair pour moi)
+
+```{r}
+for(i in 1:3){
+  matplot(Gap,t(Y)[,index.gpe],type="l",col="gray",ylab="Efforts",ylim=c(0,20),lwd=0.5)
+  lines(Gap,mufct[,grpe],col=1)
+  lines(Gap,mufct[,grpe]+3*Qfct[,i],type="p",pch="+",col=couleur[i])
+  lines(Gap,mufct[,grpe]-3*Qfct[,i],type="p",pch="-",col=couleur[i],lwd=2)
+}
+```
+
+Le même type d'interprétation peut prévaloir ici mais les résultats sont plus difficiles à interpréter, le groupe 3 semblant rassembler des courbes très diverses (groupe un peu fourre-tout)
+
+
+### Comparaison entre les 3 groupes
+
+```{r}
+par(mfrow=c(1,3))
+image.plot(matrix(rev(as.vector(t(xcoef1))),3,3)[3:1,], main="Groupe 1",xaxt="n",yaxt="n")
+axis(side=2,at=c(0,0.5,1),labels=c("Shape","Height","Thickness"),tick=F)
+axis(side=1,at=c(0,0.5,1),labels=c("Axe1","Axe2","Axe3"),tick=F)
+image.plot(matrix(rev(as.vector(t(xcoef2))),3,3)[3:1,], main="Groupe 2",xaxt="n",yaxt="n")
+axis(side=2,at=c(0,0.5,1),labels=c("Shape","Height","Thickness"),tick=F)
+axis(side=1,at=c(0,0.5,1),labels=c("Axe1","Axe2","Axe3"),tick=F)
+image.plot(matrix(rev(as.vector(t(xcoef3))),3,3)[3:1,], main="Groupe 3",xaxt="n",yaxt="n")
+axis(side=2,at=c(0,0.5,1),labels=c("Shape","Height","Thickness"),tick=F)
+axis(side=1,at=c(0,0.5,1),labels=c("Axe1","Axe2","Axe3"),tick=F)
+```
+
+On a des matrices relativement différentes dans les 3 groupes, même si on les regarde à transposition près. NB : dans le groupe 2, la CCA est appliquée en enlevant les 5 derniers coefficients splines des courbes. 
+
+
+Au niveau des axes principaux "fonctionnels", on a aussi des axes assez différents
+
+```{r}
+par(mfrow=c(1,3))
+matplot(Gap,Qfct1,col=c("coral1","palegreen3","steelblue"),type="l")
+matplot(Gap,Qfct2,col=c("coral1","palegreen3","steelblue"),type="l")
+matplot(Gap,Qfct3,col=c("coral1","palegreen3","steelblue"),type="l")
+```
+
+Il est plus difficile d'expliquer les différences entre les groupes dans cette analyse double. Mais ici, on est parti avec des groupes définis à l'avance, il faudra voir ce que cela donne si on construit des groupes en se basant sur la CCA (ou proche)
+ 

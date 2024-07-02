@@ -4,6 +4,7 @@ library(fda)
 library(tidyfun)
 library(viridis)
 library(tidyverse)
+library(FactoMineR)
 
 setwd("~/GitHub/MixPCA")
 source("2_estimators.r")
@@ -72,6 +73,8 @@ est0 = estimates(cbind(Ycoef,Xgeom),K=3,par_init=NULL,maxits=300,
                  verbose=TRUE)
 
 save(est0,file="geometriePiece/resultsGeom-31052023.Rdata")
+
+
 load("geometriePiece/resultsGeom-31052023.Rdata")
 
 est0$piik  # taille des groupes
@@ -154,9 +157,9 @@ for(i in 1:3){
 ## les composantes semblent plus interpretables maintenant, on constate
 ## que dans certains groupes, elles ne semblent pas être dans le bon ordre...
 
-##### coefficients de regression beta
+#### Canonical correlation analysis
 
-est0$beta
+
 
 
 
